@@ -32,7 +32,7 @@ public class XmlToJsonStreamer {
 
         JsonFactory jsonFactory = new JsonFactory();
         JsonGenerator generator = jsonFactory.createGenerator(jsonOutput);
-        XMLOutputFactory outFactory = new JsonXMLOutputFactory(config);
+        JsonXMLOutputFactory outFactory = new JsonXMLOutputFactory(config);
         XMLStreamWriter writer = outFactory.createXMLStreamWriter(generator);
 
         while (reader.hasNext()) {
