@@ -1,11 +1,8 @@
 package com.example.transformer;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import de.odysseus.staxon.json.JsonXMLConfig;
 import de.odysseus.staxon.json.JsonXMLConfigBuilder;
 import de.odysseus.staxon.json.JsonXMLOutputFactory;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -30,10 +27,8 @@ public class XmlToJsonStreamer {
                 .prettyPrint(false)
                 .build();
 
-        JsonFactory jsonFactory = new JsonFactory();
-        JsonGenerator generator = jsonFactory.createGenerator(jsonOutput);
-        XMLOutputFactory outFactory = new JsonXMLOutputFactory(config);
-        XMLStreamWriter writer = outFactory.createXMLStreamWriter(generator);
+        JsonXMLOutputFactory outFactory = new JsonXMLOutputFactory(config);
+        XMLStreamWriter writer = outFactory.createXMLStreamWriter(jsonOutput);
 
         while (reader.hasNext()) {
             int event = reader.next();
@@ -82,8 +77,6 @@ public class XmlToJsonStreamer {
             }
         }
         writer.flush();
-        generator.flush();
         writer.close();
-        generator.close();
     }
 }
