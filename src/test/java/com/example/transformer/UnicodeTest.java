@@ -18,6 +18,6 @@ public class UnicodeTest {
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         streamer.transform(in, out);
-        assertEquals("{\"msg\":\"🐨\"}", out.toString(StandardCharsets.UTF_8));
+        assertEquals("{\"msg\":\"🐨\"}", new String(out.toByteArray(), StandardCharsets.UTF_8));
     }
 }

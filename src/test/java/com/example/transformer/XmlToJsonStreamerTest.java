@@ -37,6 +37,6 @@ public class XmlToJsonStreamerTest {
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         streamer.transform(in, out);
-        return out.toString(StandardCharsets.UTF_8);
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 }
