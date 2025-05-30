@@ -6,6 +6,8 @@ This project provides a Spring Boot service that converts arbitrary XML document
 
 Run tests:
 
+The repository includes a GitHub Actions workflow to automatically run these tests on every push and pull request.
+
 ```bash
 mvn clean test
 ```
@@ -27,4 +29,6 @@ POST XML to `/transform` and receive the mapped JSON.
 * Comments and processing instructions are ignored.
 * Namespace prefixes are preserved.
 * Values remain strings.
+
+The tests also cover unicode handling, repeated siblings and ignoring XML comments.
 
