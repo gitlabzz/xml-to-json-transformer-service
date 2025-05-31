@@ -31,10 +31,12 @@ public class AuditService {
             byte[] j = compress ? AuditEntry.compress(json) : json;
             AuditEntry entry = new AuditEntry(counter.incrementAndGet(), clientIp, start, end,
                     success, end - start, x, j, compress);
-            if (history.size() >= maxHistory) {
-                history.removeFirst();
+            synchronized (history) {
+                if (history.size() >= maxHistory) {
+                    history.removeFirst();
+                }
+                history.addLast(entry);
             }
-            history.addLast(entry);
             logger.info("Audit entry {} stored for {} - success: {}", entry.getId(), clientIp, success);
         } catch (IOException e) {
             logger.error("Failed to store audit entry for {}", clientIp, e);
