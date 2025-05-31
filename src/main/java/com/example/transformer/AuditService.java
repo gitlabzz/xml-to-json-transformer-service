@@ -1,6 +1,8 @@
 package com.example.transformer;
 
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuditService {
+    private static final Logger logger = LoggerFactory.getLogger(AuditService.class);
     private final Deque<AuditEntry> history = new ArrayDeque<>();
     private final int maxHistory;
     private final boolean compress;
@@ -34,8 +37,9 @@ public class AuditService {
                 }
                 history.addLast(entry);
             }
+            logger.info("Audit entry {} stored for {} - success: {}", entry.getId(), clientIp, success);
         } catch (IOException e) {
-            // ignore
+            logger.error("Failed to store audit entry for {}", clientIp, e);
         }
     }
 

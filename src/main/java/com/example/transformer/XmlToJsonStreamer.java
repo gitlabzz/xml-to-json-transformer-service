@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class XmlToJsonStreamer {
+
+    private static final Logger logger = LoggerFactory.getLogger(XmlToJsonStreamer.class);
 
     private final JsonFactory jsonFactory = new JsonFactory();
     private final MappingConfig config;
@@ -39,6 +43,7 @@ public class XmlToJsonStreamer {
     }
 
     public void transform(InputStream xmlInput, OutputStream jsonOutput) throws XMLStreamException, IOException {
+        logger.debug("Starting XML to JSON transformation");
         XMLInputFactory inFactory = XMLInputFactory.newFactory();
         XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
 
@@ -56,6 +61,7 @@ public class XmlToJsonStreamer {
         g.writeEndObject();
         g.flush();
         g.close();
+        logger.debug("XML to JSON transformation completed");
     }
 
     private String readElement(XMLStreamReader reader) throws XMLStreamException, IOException {
