@@ -1,1 +1,4 @@
-audit:\n  page-size: 10
+audit:
+  history-size: 100
+  page-size: 20
+  compress: true
