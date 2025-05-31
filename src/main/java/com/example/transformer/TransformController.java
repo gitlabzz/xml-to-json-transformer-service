@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import jakarta.servlet.http.HttpServletRequest;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 
@@ -31,17 +34,20 @@ public class TransformController {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
-        StreamingResponseBody body = out -> {
-            boolean success = false;
-            try {
-                streamer.transform(xmlStream, out);
-                success = true;
-            } finally {
-                long end = System.currentTimeMillis();
-                auditService.add(clientIp, start, end, success, new byte[0], new byte[0]);
-            }
-        };
-
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            streamer.transform(xmlStream, buffer);
+            long end = System.currentTimeMillis();
+            auditService.add(clientIp, start, end, true, new byte[0], new byte[0]);
+            byte[] data = buffer.toByteArray();
+            StreamingResponseBody body = out -> out.write(data);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body);
+        } catch (XMLStreamException | IOException e) {
+            long end = System.currentTimeMillis();
+            auditService.add(clientIp, start, end, false, new byte[0], new byte[0]);
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
