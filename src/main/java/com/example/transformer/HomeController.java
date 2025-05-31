@@ -2,6 +2,7 @@ package com.example.transformer;
 
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.info.GitProperties;
+import org.springframework.lang.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,9 +12,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class HomeController {
 
     private final BuildProperties buildProperties;
+    @Nullable
     private final GitProperties gitProperties;
 
-    public HomeController(BuildProperties buildProperties, GitProperties gitProperties) {
+    public HomeController(BuildProperties buildProperties, @Nullable GitProperties gitProperties) {
         this.buildProperties = buildProperties;
         this.gitProperties = gitProperties;
     }
