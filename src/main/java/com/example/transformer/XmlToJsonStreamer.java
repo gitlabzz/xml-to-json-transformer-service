@@ -69,7 +69,18 @@ public class XmlToJsonStreamer {
     }
 
     private static class ChildState {
-        java.util.List<String> fragments = new java.util.ArrayList<>();
+        final StringBuilder fragments = new StringBuilder();
+        String lastFragment;
+        int count = 0;
+
+        void add(String fragment) {
+            if (count > 0) {
+                fragments.append(',');
+            }
+            fragments.append(fragment);
+            lastFragment = fragment;
+            count++;
+        }
     }
 
     private void readElement(XMLStreamReader reader, JsonGenerator out) throws XMLStreamException, IOException {
@@ -93,7 +104,7 @@ public class XmlToJsonStreamer {
                 buf.reset();
                 readElement(reader, tmp);
                 tmp.flush();
-                state.fragments.add(buf.toString(StandardCharsets.UTF_8));
+                state.add(buf.toString(StandardCharsets.UTF_8));
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -117,16 +128,13 @@ public class XmlToJsonStreamer {
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
                 String name = e.getKey();
                 ChildState state = e.getValue();
-                if (state.fragments.size() == 1 || !config.isArraysForRepeatedSiblings()) {
-                    out.writeFieldName(name);
-                    out.writeRawValue(state.fragments.get(state.fragments.size() - 1));
+                out.writeFieldName(name);
+                if (!config.isArraysForRepeatedSiblings()) {
+                    out.writeRawValue(state.lastFragment);
+                } else if (state.count == 1) {
+                    out.writeRawValue(state.fragments.toString());
                 } else {
-                    out.writeFieldName(name);
-                    out.writeStartArray();
-                    for (String fragment : state.fragments) {
-                        out.writeRawValue(fragment);
-                    }
-                    out.writeEndArray();
+                    out.writeRawValue("[" + state.fragments.toString() + "]");
                 }
             }
             out.writeEndObject();
