@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.core.io.SerializedString;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
+import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.example.transformer.CompactPrettyPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -65,7 +65,7 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
         JsonFactory f = JsonFactory.builder()
-                .disable(JsonWriteFeature.ESCAPE_NON_ASCII)
+                .configure(StreamWriteFeature.ESCAPE_NON_ASCII, false)
                 .build();
         this.jsonFactory = f;
     }
@@ -94,6 +94,7 @@ public class XmlToJsonStreamer {
         }
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+        g.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         g.setHighestNonEscapedChar(0);
         g.setCharacterEscapes(new NoAsciiEscapes());
         g.setPrettyPrinter(new CompactPrettyPrinter());
@@ -132,6 +133,7 @@ public class XmlToJsonStreamer {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         tmp.setHighestNonEscapedChar(0);
         tmp.setCharacterEscapes(new NoAsciiEscapes());
         tmp.setPrettyPrinter(new CompactPrettyPrinter());
