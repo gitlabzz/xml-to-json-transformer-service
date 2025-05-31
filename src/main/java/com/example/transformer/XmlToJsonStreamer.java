@@ -14,9 +14,9 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringWriter;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class XmlToJsonStreamer {
@@ -47,47 +47,70 @@ public class XmlToJsonStreamer {
         XMLInputFactory inFactory = XMLInputFactory.newFactory();
         inFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
         inFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-        XMLStreamReader reader = null;
-        try {
-            reader = inFactory.createXMLStreamReader(xmlInput);
+        XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
 
-            // advance to root element
-            while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
-                // skip until start element
-            }
-            String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
-            String rootJson = readElement(reader);
-
-            JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
-            g.writeStartObject();
-            g.writeFieldName(rootName);
-            g.writeRawValue(rootJson);
-            g.writeEndObject();
-            g.flush();
-            g.close();
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
+        // advance to root element
+        while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
+            // skip until start element
         }
+        String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
+        JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+        g.writeStartObject();
+        g.writeFieldName(rootName);
+        readElement(reader, g);
+        g.writeEndObject();
+        g.flush();
+        g.close();
         logger.debug("XML to JSON transformation completed");
     }
 
-    private String readElement(XMLStreamReader reader) throws XMLStreamException, IOException {
+    private static class ChildState {
+        ByteArrayOutputStream buffer;
+        int count;
+        boolean arrayStarted;
+    }
+
+    private void readElement(XMLStreamReader reader, JsonGenerator out) throws XMLStreamException, IOException {
         Map<String, String> attributes = new LinkedHashMap<>();
         for (int i = 0; i < reader.getAttributeCount(); i++) {
             String name = buildQName(reader.getAttributePrefix(i), reader.getAttributeLocalName(i));
             attributes.put(name, reader.getAttributeValue(i));
         }
+
         StringBuilder text = new StringBuilder();
-        Map<String, List<String>> children = new LinkedHashMap<>();
+        Map<String, ChildState> children = new LinkedHashMap<>();
 
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
-                String childJson = readElement(reader);
-                children.computeIfAbsent(childName, k -> new ArrayList<>()).add(childJson);
+                ChildState state = children.get(childName);
+                if (state == null) {
+                    state = new ChildState();
+                    state.count = 1;
+                    state.buffer = new ByteArrayOutputStream();
+                    JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
+                    readElement(reader, tmp);
+                    tmp.close();
+                    children.put(childName, state);
+                } else {
+                    state.count++;
+                    if (config.isArraysForRepeatedSiblings()) {
+                        if (!state.arrayStarted) {
+                            out.writeFieldName(childName);
+                            out.writeStartArray();
+                            out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                            state.arrayStarted = true;
+                            state.buffer = null;
+                        }
+                        readElement(reader, out);
+                    } else {
+                        state.buffer.reset();
+                        JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
+                        readElement(reader, tmp);
+                        tmp.close();
+                    }
+                }
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -97,30 +120,27 @@ public class XmlToJsonStreamer {
             }
         }
 
-        StringWriter sw = new StringWriter();
-        JsonGenerator g = jsonFactory.createGenerator(sw);
         if (attributes.isEmpty() && children.isEmpty()) {
-            g.writeString(text.toString());
+            out.writeString(text.toString());
         } else {
-            g.writeStartObject();
+            out.writeStartObject();
             for (Map.Entry<String, String> e : attributes.entrySet()) {
-                g.writeStringField(config.getAttributePrefix() + e.getKey(), e.getValue());
+                out.writeStringField(config.getAttributePrefix() + e.getKey(), e.getValue());
             }
             if (text.length() > 0) {
-                g.writeStringField(config.getTextField(), text.toString());
+                out.writeStringField(config.getTextField(), text.toString());
             }
-            for (Map.Entry<String, List<String>> e : children.entrySet()) {
-                g.writeFieldName(e.getKey());
-                List<String> vals = e.getValue();
-                if (vals.size() == 1 || !config.isArraysForRepeatedSiblings()) {
-                    g.writeRawValue(vals.get(vals.size() - 1));
-                } else {
-                    g.writeRawValue(vals.stream().collect(Collectors.joining(",", "[", "]")));
+            for (Map.Entry<String, ChildState> e : children.entrySet()) {
+                ChildState state = e.getValue();
+                String name = e.getKey();
+                if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
+                    out.writeFieldName(name);
+                    out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                } else if (state.arrayStarted) {
+                    out.writeEndArray();
                 }
             }
-            g.writeEndObject();
+            out.writeEndObject();
         }
-        g.close();
-        return sw.toString();
     }
 }
