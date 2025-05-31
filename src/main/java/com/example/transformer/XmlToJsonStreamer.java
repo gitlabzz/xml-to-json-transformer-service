@@ -2,7 +2,6 @@ package com.example.transformer;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -30,9 +29,7 @@ public class XmlToJsonStreamer {
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
-        this.jsonFactory = JsonFactory.builder()
-                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
-                .build();
+        this.jsonFactory = JsonFactory.builder().build();
     }
 
     public XmlToJsonStreamer() {
@@ -59,6 +56,7 @@ public class XmlToJsonStreamer {
         }
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+        g.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         g.writeStartObject();
         g.writeFieldName(rootName);
         readElement(reader, g);
@@ -84,15 +82,17 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
-                ByteArrayOutputStream buf = new ByteArrayOutputStream();
-                JsonGenerator tmp = jsonFactory.createGenerator(buf);
+                buf.reset();
                 readElement(reader, tmp);
-                tmp.close();
+                tmp.flush();
                 state.fragments.add(buf.toString(StandardCharsets.UTF_8));
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
@@ -102,6 +102,7 @@ public class XmlToJsonStreamer {
                 break;
             }
         }
+        tmp.close();
 
         if (attributes.isEmpty() && children.isEmpty()) {
             out.writeString(text.toString());

@@ -1,6 +1,7 @@
 package com.example.transformer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,14 @@ public class AuditControllerMockMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private AuditService auditService;
+
+    @BeforeEach
+    public void setup() {
+        auditService.clear();
+    }
 
     @Test
     public void detailNotFound() throws Exception {
