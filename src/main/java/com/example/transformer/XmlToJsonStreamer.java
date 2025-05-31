@@ -84,16 +84,18 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        JsonGenerator tmp = jsonFactory.createGenerator(buffer);
+
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
-                ByteArrayOutputStream buf = new ByteArrayOutputStream();
-                JsonGenerator tmp = jsonFactory.createGenerator(buf);
+                buffer.reset();
                 readElement(reader, tmp);
-                tmp.close();
-                state.fragments.add(buf.toString(StandardCharsets.UTF_8));
+                tmp.flush();
+                state.fragments.add(buffer.toString(StandardCharsets.UTF_8));
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -102,6 +104,8 @@ public class XmlToJsonStreamer {
                 break;
             }
         }
+
+        tmp.close();
 
         if (attributes.isEmpty() && children.isEmpty()) {
             out.writeString(text.toString());
