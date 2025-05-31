@@ -1,9 +1,10 @@
 package com.example.transformer;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,9 +27,10 @@ public class FileAuditStore implements AuditStore {
     public FileAuditStore(String filePath, int maxHistory) {
         this.file = Paths.get(filePath);
         this.maxHistory = maxHistory;
-        this.mapper = new ObjectMapper();
-        this.mapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
-        this.mapper.getFactory().configure(JsonWriteFeature.ESCAPE_NON_ASCII, false);
+        JsonFactory factory = JsonFactory.builder()
+                .disable(JsonWriteFeature.ESCAPE_NON_ASCII)
+                .build();
+        this.mapper = JsonMapper.builder(factory).build();
         load();
     }
 
