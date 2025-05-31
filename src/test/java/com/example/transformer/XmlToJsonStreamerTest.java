@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlToJsonStreamerTest {
 
@@ -31,6 +32,29 @@ public class XmlToJsonStreamerTest {
         String xml = "<p>Hello<b>x</b></p>";
         String expected = "{\"p\":{\"#text\":\"Hello\",\"b\":\"x\"}}";
         assertEquals(expected, transform(xml));
+    }
+
+    @Test
+    public void inputStreamClosed() throws Exception {
+        byte[] data = "<a/>".getBytes(StandardCharsets.UTF_8);
+        CloseTrackingInputStream in = new CloseTrackingInputStream(data);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        streamer.transform(in, out);
+        assertTrue(in.closed);
+    }
+
+    private static class CloseTrackingInputStream extends ByteArrayInputStream {
+        boolean closed = false;
+
+        CloseTrackingInputStream(byte[] buf) {
+            super(buf);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            closed = true;
+        }
     }
 
     private String transform(String xml) throws Exception {
