@@ -35,6 +35,7 @@ public class XmlToJsonStreamer {
         private static final long serialVersionUID = 1L;
 
         private static final int[] ESC = CharacterEscapes.standardAsciiEscapesForJSON();
+
         static {
             for (int i = 32; i < ESC.length; i++) {
                 if (i != '"' && i != '\\') {
@@ -48,7 +49,9 @@ public class XmlToJsonStreamer {
             return ESC;
         }
 
-        /** Never escape any non-ASCII code point */
+        /**
+         * Never escape any non-ASCII code point
+         */
         @Override
         public SerializedString getEscapeSequence(int ch) {
             return null;
@@ -91,6 +94,7 @@ public class XmlToJsonStreamer {
         }
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+        g.setHighestNonEscapedChar(0);
         g.setCharacterEscapes(new NoAsciiEscapes());
         g.setPrettyPrinter(new CompactPrettyPrinter());
         g.writeStartObject();
@@ -128,6 +132,7 @@ public class XmlToJsonStreamer {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.setHighestNonEscapedChar(0);
         tmp.setCharacterEscapes(new NoAsciiEscapes());
         tmp.setPrettyPrinter(new CompactPrettyPrinter());
         while (reader.hasNext()) {
