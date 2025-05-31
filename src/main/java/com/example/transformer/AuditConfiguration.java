@@ -12,4 +12,9 @@ public class AuditConfiguration {
         }
         return new InMemoryAuditStore(props.getHistorySize());
     }
+
+    @Bean
+    public AuditService auditService(AuditStore store, AuditProperties props) {
+        return new AuditService(props, store);
+    }
 }
