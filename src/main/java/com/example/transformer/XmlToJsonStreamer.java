@@ -2,6 +2,7 @@ package com.example.transformer;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
         this.jsonFactory = JsonFactory.builder()
-                .configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false)
+                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
                 .build();
     }
 
