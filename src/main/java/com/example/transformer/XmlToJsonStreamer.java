@@ -47,22 +47,29 @@ public class XmlToJsonStreamer {
         XMLInputFactory inFactory = XMLInputFactory.newFactory();
         inFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
         inFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-        XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
+        XMLStreamReader reader = null;
+        try {
+            reader = inFactory.createXMLStreamReader(xmlInput);
 
-        // advance to root element
-        while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
-            // skip until start element
+            // advance to root element
+            while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
+                // skip until start element
+            }
+            String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
+            String rootJson = readElement(reader);
+
+            JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+            g.writeStartObject();
+            g.writeFieldName(rootName);
+            g.writeRawValue(rootJson);
+            g.writeEndObject();
+            g.flush();
+            g.close();
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
         }
-        String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
-        String rootJson = readElement(reader);
-
-        JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
-        g.writeStartObject();
-        g.writeFieldName(rootName);
-        g.writeRawValue(rootJson);
-        g.writeEndObject();
-        g.flush();
-        g.close();
         logger.debug("XML to JSON transformation completed");
     }
 
