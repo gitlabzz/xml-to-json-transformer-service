@@ -60,3 +60,10 @@ Environment specific variants of `application.yml` can be placed alongside the d
 using the naming convention `application-{profile}.yml` (e.g. `application-dev.yml`). The active
 profile is selected via the standard Spring Boot `spring.profiles.active` property.
 
+### Home Page
+
+The root URL `/` displays links to the audit table and generated OpenAPI documentation.
+It also shows the application version, build time and Git commit id extracted from
+`build-info.properties` and `git.properties` at runtime. A sample `curl` command is
+provided for quickly testing the `/transform` endpoint.
+
