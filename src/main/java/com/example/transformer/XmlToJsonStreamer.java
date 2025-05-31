@@ -31,9 +31,12 @@ public class XmlToJsonStreamer {
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
-        this.jsonFactory = JsonFactory.builder()
+        JsonFactory f = JsonFactory.builder()
                 .disable(JsonWriteFeature.ESCAPE_NON_ASCII)
                 .build();
+        // also ensure generator-level feature is disabled
+        f.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+        this.jsonFactory = f;
     }
 
     public XmlToJsonStreamer() {
