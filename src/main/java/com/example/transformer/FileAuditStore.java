@@ -9,15 +9,15 @@ import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 public class FileAuditStore implements AuditStore {
     private final Path file;
-    private final Deque<AuditEntry> history = new ArrayDeque<>();
+    private final Deque<AuditEntry> history = new ConcurrentLinkedDeque<>();
     private final int maxHistory;
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -77,7 +77,7 @@ public class FileAuditStore implements AuditStore {
     }
 
     @Override
-    public synchronized List<AuditEntry> page(int page, int size) {
+    public List<AuditEntry> page(int page, int size) {
         return history.stream()
                 .skip((long) page * size)
                 .limit(size)
@@ -85,7 +85,7 @@ public class FileAuditStore implements AuditStore {
     }
 
     @Override
-    public synchronized AuditEntry get(long id) {
+    public AuditEntry get(long id) {
         for (AuditEntry e : history) {
             if (e.getId() == id) {
                 return e;

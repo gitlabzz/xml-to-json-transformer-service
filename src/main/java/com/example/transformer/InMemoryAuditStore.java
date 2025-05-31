@@ -1,13 +1,13 @@
 package com.example.transformer;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 public class InMemoryAuditStore implements AuditStore {
-    private final Deque<AuditEntry> history = new ArrayDeque<>();
+    private final Deque<AuditEntry> history = new ConcurrentLinkedDeque<>();
     private final int maxHistory;
 
     public InMemoryAuditStore(int maxHistory) {
@@ -15,7 +15,7 @@ public class InMemoryAuditStore implements AuditStore {
     }
 
     @Override
-    public synchronized void save(AuditEntry entry) {
+    public void save(AuditEntry entry) {
         if (history.size() >= maxHistory) {
             history.removeFirst();
         }
@@ -23,7 +23,7 @@ public class InMemoryAuditStore implements AuditStore {
     }
 
     @Override
-    public synchronized List<AuditEntry> page(int page, int size) {
+    public List<AuditEntry> page(int page, int size) {
         return history.stream()
                 .skip((long) page * size)
                 .limit(size)
@@ -31,7 +31,7 @@ public class InMemoryAuditStore implements AuditStore {
     }
 
     @Override
-    public synchronized AuditEntry get(long id) {
+    public AuditEntry get(long id) {
         for (AuditEntry e : history) {
             if (e.getId() == id) {
                 return e;
