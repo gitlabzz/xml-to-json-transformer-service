@@ -34,7 +34,6 @@ public class XmlToJsonStreamer {
         this.config = config;
         this.jsonFactory = JsonFactory.builder()
                 .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
-                .configure(Feature.ESCAPE_NON_ASCII, false)
                 .build();
     }
 
