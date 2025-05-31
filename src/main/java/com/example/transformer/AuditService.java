@@ -58,4 +58,14 @@ public class AuditService {
         }
         return null;
     }
+
+    /**
+     * Clears all stored audit entries. Used in tests.
+     */
+    public void clear() {
+        synchronized (history) {
+            history.clear();
+            counter.set(0);
+        }
+    }
 }

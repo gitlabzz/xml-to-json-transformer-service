@@ -2,7 +2,6 @@ package com.example.transformer;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -30,9 +29,7 @@ public class XmlToJsonStreamer {
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
-        this.jsonFactory = JsonFactory.builder()
-                .configure(Feature.ESCAPE_NON_ASCII, false)
-                .build();
+        this.jsonFactory = JsonFactory.builder().build();
     }
 
     public XmlToJsonStreamer() {
@@ -59,6 +56,7 @@ public class XmlToJsonStreamer {
         }
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
+        g.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         g.writeStartObject();
         g.writeFieldName(rootName);
         readElement(reader, g);
@@ -84,18 +82,18 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        JsonGenerator tmp = jsonFactory.createGenerator(buffer);
-
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
-                buffer.reset();
+                buf.reset();
                 readElement(reader, tmp);
                 tmp.flush();
-                state.fragments.add(buffer.toString(StandardCharsets.UTF_8));
+                state.fragments.add(buf.toString(StandardCharsets.UTF_8));
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -104,7 +102,6 @@ public class XmlToJsonStreamer {
                 break;
             }
         }
-
         tmp.close();
 
         if (attributes.isEmpty() && children.isEmpty()) {
@@ -120,12 +117,16 @@ public class XmlToJsonStreamer {
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
                 String name = e.getKey();
                 ChildState state = e.getValue();
-                out.writeFieldName(name);
                 if (state.fragments.size() == 1 || !config.isArraysForRepeatedSiblings()) {
+                    out.writeFieldName(name);
                     out.writeRawValue(state.fragments.get(state.fragments.size() - 1));
                 } else {
-                    String joined = String.join(",", state.fragments);
-                    out.writeRawValue("[" + joined + "]");
+                    out.writeFieldName(name);
+                    out.writeStartArray();
+                    for (String fragment : state.fragments) {
+                        out.writeRawValue(fragment);
+                    }
+                    out.writeEndArray();
                 }
             }
             out.writeEndObject();
