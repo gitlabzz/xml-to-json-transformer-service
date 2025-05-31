@@ -2,6 +2,8 @@ package com.example.transformer;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
+import com.example.transformer.CompactPrettyPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -29,7 +31,9 @@ public class XmlToJsonStreamer {
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
-        this.jsonFactory = JsonFactory.builder().build();
+        this.jsonFactory = JsonFactory.builder()
+                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+                .build();
     }
 
     public XmlToJsonStreamer() {
@@ -57,6 +61,7 @@ public class XmlToJsonStreamer {
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
         g.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+        g.setPrettyPrinter(new CompactPrettyPrinter());
         g.writeStartObject();
         g.writeFieldName(rootName);
         readElement(reader, g);
@@ -96,6 +101,7 @@ public class XmlToJsonStreamer {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
         tmp.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+        tmp.setPrettyPrinter(new CompactPrettyPrinter());
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
