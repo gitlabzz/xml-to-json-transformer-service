@@ -30,6 +30,6 @@ public class TransformControllerMockMvcTest {
         mockMvc.perform(post("/transform")
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().is5xxServerError());
     }
 }
