@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>XML to JSON Transformer</title></head>
+<body>
+<h2>XML to JSON Transformer</h2>
+<p>Version: <span th:text="${version}">n/a</span></p>
+<p>Build Time: <span th:text="${#dates.format(buildTime, 'yyyy-MM-dd HH:mm:ss')}">n/a</span></p>
+<p>Commit ID: <span th:text="${commitId}">n/a</span></p>
+<ul>
+<li><a href="/audit">Audit History</a></li>
+<li><a href="/v3/api-docs">OpenAPI Spec</a></li>
+<li><a href="/swagger-ui/index.html">Swagger UI</a></li>
+</ul>
+<h3>Sample Request</h3>
+<pre>curl -X POST -H "Content-Type: application/xml" --data-binary @example.xml http://localhost:8080/transform</pre>
+</body>
+</html>
