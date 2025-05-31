@@ -1,5 +1,6 @@
 package com.example.transformer;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -19,11 +20,13 @@ public class FileAuditStore implements AuditStore {
     private final Path file;
     private final Deque<AuditEntry> history = new ConcurrentLinkedDeque<>();
     private final int maxHistory;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     public FileAuditStore(String filePath, int maxHistory) {
         this.file = Paths.get(filePath);
         this.maxHistory = maxHistory;
+        this.mapper = new ObjectMapper();
+        this.mapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
         load();
     }
 
