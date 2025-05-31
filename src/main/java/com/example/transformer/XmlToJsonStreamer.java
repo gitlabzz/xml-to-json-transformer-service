@@ -31,6 +31,13 @@ public class XmlToJsonStreamer {
         this(new MappingConfig());
     }
 
+    private String buildQName(String prefix, String local) {
+        if (prefix == null || prefix.isEmpty()) {
+            return local;
+        }
+        return prefix + ":" + local;
+    }
+
     public void transform(InputStream xmlInput, OutputStream jsonOutput) throws XMLStreamException, IOException {
         XMLInputFactory inFactory = XMLInputFactory.newFactory();
         XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
@@ -39,7 +46,7 @@ public class XmlToJsonStreamer {
         while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
             // skip until start element
         }
-        String rootName = reader.getName().toString();
+        String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         String rootJson = readElement(reader);
 
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
@@ -54,7 +61,8 @@ public class XmlToJsonStreamer {
     private String readElement(XMLStreamReader reader) throws XMLStreamException, IOException {
         Map<String, String> attributes = new LinkedHashMap<>();
         for (int i = 0; i < reader.getAttributeCount(); i++) {
-            attributes.put(reader.getAttributeName(i).toString(), reader.getAttributeValue(i));
+            String name = buildQName(reader.getAttributePrefix(i), reader.getAttributeLocalName(i));
+            attributes.put(name, reader.getAttributeValue(i));
         }
         StringBuilder text = new StringBuilder();
         Map<String, List<String>> children = new LinkedHashMap<>();
@@ -62,7 +70,7 @@ public class XmlToJsonStreamer {
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
-                String childName = reader.getName().toString();
+                String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 String childJson = readElement(reader);
                 children.computeIfAbsent(childName, k -> new ArrayList<>()).add(childJson);
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
