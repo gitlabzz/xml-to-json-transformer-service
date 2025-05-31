@@ -4,7 +4,8 @@ import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class AuditEntry {
+public class AuditEntry implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private final long id;
     private final String clientIp;
     private final long requestTime;
