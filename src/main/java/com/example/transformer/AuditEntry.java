@@ -1,5 +1,8 @@
 package com.example.transformer;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -16,8 +19,17 @@ public class AuditEntry implements java.io.Serializable {
     private final byte[] jsonData;
     private final boolean compressed;
 
-    public AuditEntry(long id, String clientIp, long requestTime, long responseTime, boolean success,
-                      long durationMs, byte[] xmlData, byte[] jsonData, boolean compressed) {
+    @JsonCreator
+    public AuditEntry(
+            @JsonProperty("id") long id,
+            @JsonProperty("clientIp") String clientIp,
+            @JsonProperty("requestTime") long requestTime,
+            @JsonProperty("responseTime") long responseTime,
+            @JsonProperty("success") boolean success,
+            @JsonProperty("durationMs") long durationMs,
+            @JsonProperty("xmlData") byte[] xmlData,
+            @JsonProperty("jsonData") byte[] jsonData,
+            @JsonProperty("compressed") boolean compressed) {
         this.id = id;
         this.clientIp = clientIp;
         this.requestTime = requestTime;
