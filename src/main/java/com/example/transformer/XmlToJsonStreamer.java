@@ -4,8 +4,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.core.io.SerializedString;
-import com.fasterxml.jackson.core.StreamWriteFeature;
-import com.example.transformer.CompactPrettyPrinter;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -27,37 +26,6 @@ public class XmlToJsonStreamer {
 
     private static final Logger logger = LoggerFactory.getLogger(XmlToJsonStreamer.class);
 
-    /**
-     * {@link CharacterEscapes} implementation that suppresses unnecessary
-     * escaping so all Unicode code points are written as raw UTF-8.
-     */
-    public static final class NoAsciiEscapes extends CharacterEscapes {
-        private static final long serialVersionUID = 1L;
-
-        private static final int[] ESC = CharacterEscapes.standardAsciiEscapesForJSON();
-
-        static {
-            for (int i = 32; i < ESC.length; i++) {
-                if (i != '"' && i != '\\') {
-                    ESC[i] = CharacterEscapes.ESCAPE_NONE;
-                }
-            }
-        }
-
-        @Override
-        public int[] getEscapeCodesForAscii() {
-            return ESC;
-        }
-
-        /**
-         * Never escape any non-ASCII code point
-         */
-        @Override
-        public SerializedString getEscapeSequence(int ch) {
-            return null;
-        }
-    }
-
     private final JsonFactory jsonFactory;
     private final MappingConfig config;
 
@@ -65,7 +33,8 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
         JsonFactory f = JsonFactory.builder()
-                .configure(StreamWriteFeature.ESCAPE_NON_ASCII, false)
+                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+                .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                 .build();
         this.jsonFactory = f;
     }
@@ -94,9 +63,10 @@ public class XmlToJsonStreamer {
         }
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
-        g.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
-        g.setHighestNonEscapedChar(0);
-        g.setCharacterEscapes(new NoAsciiEscapes());
+
+        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
+
         g.setPrettyPrinter(new CompactPrettyPrinter());
         g.writeStartObject();
         g.writeFieldName(rootName);
@@ -133,9 +103,10 @@ public class XmlToJsonStreamer {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
-        tmp.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
-        tmp.setHighestNonEscapedChar(0);
-        tmp.setCharacterEscapes(new NoAsciiEscapes());
+
+        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
+
         tmp.setPrettyPrinter(new CompactPrettyPrinter());
         while (reader.hasNext()) {
             int event = reader.next();
