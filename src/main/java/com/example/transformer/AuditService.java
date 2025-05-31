@@ -1,19 +1,27 @@
 package com.example.transformer;
 
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 public class AuditService {
-    private final AuditStore store;
+    private static final Logger logger = LoggerFactory.getLogger(AuditService.class);
+    private final Deque<AuditEntry> history = new ArrayDeque<>();
+    private final int maxHistory;
     private final boolean compress;
     private final AtomicLong counter = new AtomicLong();
 
-    public AuditService(AuditProperties props, AuditStore store) {
-        this.store = store;
+    public AuditService(AuditProperties props) {
+        this.maxHistory = props.getHistorySize();
         this.compress = props.isCompress();
     }
 
@@ -23,17 +31,35 @@ public class AuditService {
             byte[] j = compress ? AuditEntry.compress(json) : json;
             AuditEntry entry = new AuditEntry(counter.incrementAndGet(), clientIp, start, end,
                     success, end - start, x, j, compress);
-            store.save(entry);
+            synchronized (history) {
+                if (history.size() >= maxHistory) {
+                    history.removeFirst();
+                }
+                history.addLast(entry);
+            }
+            logger.info("Audit entry {} stored for {} - success: {}", entry.getId(), clientIp, success);
         } catch (IOException e) {
-            // ignore
+            logger.error("Failed to store audit entry for {}", clientIp, e);
         }
     }
 
     public List<AuditEntry> page(int page, int size) {
-        return store.page(page, size);
+        synchronized (history) {
+            return history.stream()
+                    .skip((long) page * size)
+                    .limit(size)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
     }
 
     public AuditEntry get(long id) {
-        return store.get(id);
+        synchronized (history) {
+            for (AuditEntry e : history) {
+                if (e.getId() == id) {
+                    return e;
+                }
+            }
+        }
+        return null;
     }
 }
