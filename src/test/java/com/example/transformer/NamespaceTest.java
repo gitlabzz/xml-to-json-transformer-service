@@ -8,17 +8,16 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RepeatedSiblingsTest {
+public class NamespaceTest {
 
     private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
 
     @Test
-    public void arrayLogic() throws Exception {
-        String xml = "<items><item>x</item><item>y</item></items>";
-        String expected = "{\"items\":{\"item\":[\"x\",\"y\"]}}";
+    public void prefixesPreserved() throws Exception {
+        String xml = "<ns:root xmlns:ns='urn:test'><ns:child attr='v'/></ns:root>";
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         streamer.transform(in, out);
-        assertEquals(expected, out.toString());
+        assertEquals("{\"ns:root\":{\"ns:child\":{\"@attr\":\"v\"}}}", out.toString());
     }
 }
