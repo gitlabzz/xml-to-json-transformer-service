@@ -31,9 +31,12 @@ public class XmlToJsonStreamer {
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
-        this.jsonFactory = JsonFactory.builder()
-                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+        JsonFactory f = JsonFactory.builder()
+                .disable(JsonWriteFeature.ESCAPE_NON_ASCII)
                 .build();
+        // also ensure generator-level feature is disabled
+        f.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+        this.jsonFactory = f;
     }
 
     public XmlToJsonStreamer() {
@@ -74,15 +77,12 @@ public class XmlToJsonStreamer {
     }
 
     private static class ChildState {
-        final StringBuilder fragments = new StringBuilder();
+        final List<String> fragments = new ArrayList<>();
         String lastFragment;
         int count = 0;
 
         void add(String fragment) {
-            if (count > 0) {
-                fragments.append(',');
-            }
-            fragments.append(fragment);
+            fragments.add(fragment);
             lastFragment = fragment;
             count++;
         }
@@ -138,9 +138,13 @@ public class XmlToJsonStreamer {
                 if (!config.isArraysForRepeatedSiblings()) {
                     out.writeRawValue(state.lastFragment);
                 } else if (state.count == 1) {
-                    out.writeRawValue(state.fragments.toString());
+                    out.writeRawValue(state.fragments.get(0));
                 } else {
-                    out.writeRawValue("[" + state.fragments.toString() + "]");
+                    out.writeStartArray();
+                    for (String fragment : state.fragments) {
+                        out.writeRawValue(fragment);
+                    }
+                    out.writeEndArray();
                 }
             }
             out.writeEndObject();
