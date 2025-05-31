@@ -45,6 +45,8 @@ public class XmlToJsonStreamer {
     public void transform(InputStream xmlInput, OutputStream jsonOutput) throws XMLStreamException, IOException {
         logger.debug("Starting XML to JSON transformation");
         XMLInputFactory inFactory = XMLInputFactory.newFactory();
+        inFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+        inFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
         XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
 
         // advance to root element
