@@ -29,14 +29,14 @@ public class TransformController {
 
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<StreamingResponseBody> transform(@RequestBody InputStream xmlStream,
+    public ResponseEntity<StreamingResponseBody> transform(@RequestBody byte[] xml,
                                                           HttpServletRequest request) {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try {
-            streamer.transform(xmlStream, buffer);
+            streamer.transform(new java.io.ByteArrayInputStream(xml), buffer);
             long end = System.currentTimeMillis();
             auditService.add(clientIp, start, end, true, new byte[0], new byte[0]);
             byte[] data = buffer.toByteArray();

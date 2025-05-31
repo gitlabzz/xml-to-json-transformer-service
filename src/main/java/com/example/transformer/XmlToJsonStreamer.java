@@ -23,12 +23,15 @@ public class XmlToJsonStreamer {
 
     private static final Logger logger = LoggerFactory.getLogger(XmlToJsonStreamer.class);
 
-    private final JsonFactory jsonFactory = new JsonFactory();
+    private final JsonFactory jsonFactory;
     private final MappingConfig config;
 
     @Autowired
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
+        this.jsonFactory = JsonFactory.builder()
+                .configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false)
+                .build();
     }
 
     public XmlToJsonStreamer() {
@@ -61,13 +64,13 @@ public class XmlToJsonStreamer {
         g.writeEndObject();
         g.flush();
         g.close();
+        reader.close();
+        xmlInput.close();
         logger.debug("XML to JSON transformation completed");
     }
 
     private static class ChildState {
-        ByteArrayOutputStream buffer;
-        int count;
-        boolean arrayStarted;
+        java.util.List<String> fragments = new java.util.ArrayList<>();
     }
 
     private void readElement(XMLStreamReader reader, JsonGenerator out) throws XMLStreamException, IOException {
@@ -84,33 +87,12 @@ public class XmlToJsonStreamer {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
-                ChildState state = children.get(childName);
-                if (state == null) {
-                    state = new ChildState();
-                    state.count = 1;
-                    state.buffer = new ByteArrayOutputStream();
-                    JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
-                    readElement(reader, tmp);
-                    tmp.close();
-                    children.put(childName, state);
-                } else {
-                    state.count++;
-                    if (config.isArraysForRepeatedSiblings()) {
-                        if (!state.arrayStarted) {
-                            out.writeFieldName(childName);
-                            out.writeStartArray();
-                            out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
-                            state.arrayStarted = true;
-                            state.buffer = null;
-                        }
-                        readElement(reader, out);
-                    } else {
-                        state.buffer.reset();
-                        JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
-                        readElement(reader, tmp);
-                        tmp.close();
-                    }
-                }
+                ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                JsonGenerator tmp = jsonFactory.createGenerator(buf);
+                readElement(reader, tmp);
+                tmp.close();
+                state.fragments.add(buf.toString(StandardCharsets.UTF_8));
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -131,12 +113,17 @@ public class XmlToJsonStreamer {
                 out.writeStringField(config.getTextField(), text.toString());
             }
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
-                ChildState state = e.getValue();
                 String name = e.getKey();
-                if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
+                ChildState state = e.getValue();
+                if (state.fragments.size() == 1 || !config.isArraysForRepeatedSiblings()) {
                     out.writeFieldName(name);
-                    out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
-                } else if (state.arrayStarted) {
+                    out.writeRawValue(state.fragments.get(state.fragments.size() - 1));
+                } else {
+                    out.writeFieldName(name);
+                    out.writeStartArray();
+                    for (String fragment : state.fragments) {
+                        out.writeRawValue(fragment);
+                    }
                     out.writeEndArray();
                 }
             }
