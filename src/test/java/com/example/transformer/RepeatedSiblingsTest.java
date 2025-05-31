@@ -15,7 +15,7 @@ public class RepeatedSiblingsTest {
     @Test
     public void arrayLogic() throws Exception {
         String xml = "<items><item>x</item><item>y</item></items>";
-        String expected = "{\"items\":{\"item\":[\"x\", \"y\"]}}";
+        String expected = "{\"items\":{\"item\":[\"x\",\"y\"]}}";
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         streamer.transform(in, out);
