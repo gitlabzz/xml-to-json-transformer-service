@@ -1,6 +1,7 @@
 package com.example.transformer;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,12 +33,12 @@ public class AuditController {
     }
 
     @GetMapping(value = "/audit/{id}", produces = MediaType.TEXT_HTML_VALUE)
-    public String detail(@PathVariable("id") long id, Model model) throws IOException {
+    public Object detail(@PathVariable("id") long id, Model model) throws IOException {
         logger.info("Audit detail requested for id {}", id);
         AuditEntry entry = service.get(id);
         if (entry == null) {
             logger.warn("Audit entry {} not found", id);
-            return "auditDetail";
+            return ResponseEntity.notFound().build();
         }
         model.addAttribute("entry", entry);
         return "auditDetail";
