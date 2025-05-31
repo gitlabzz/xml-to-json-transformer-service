@@ -1,8 +1,11 @@
 package com.example.transformer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +19,7 @@ public class FileAuditStore implements AuditStore {
     private final Path file;
     private final Deque<AuditEntry> history = new ArrayDeque<>();
     private final int maxHistory;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public FileAuditStore(String filePath, int maxHistory) {
         this.file = Paths.get(filePath);
@@ -24,8 +28,19 @@ public class FileAuditStore implements AuditStore {
     }
 
     private void load() {
-        if (Files.exists(file)) {
-            try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(file))) {
+        if (!Files.exists(file)) {
+            return;
+        }
+        try {
+            byte[] data = Files.readAllBytes(file);
+            try {
+                List<AuditEntry> list = mapper.readValue(data, new TypeReference<List<AuditEntry>>() {});
+                history.addAll(list);
+                return;
+            } catch (Exception ignore) {
+                // not JSON - try legacy format
+            }
+            try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data))) {
                 Object obj = in.readObject();
                 if (obj instanceof List<?> list) {
                     for (Object e : list) {
@@ -34,16 +49,20 @@ public class FileAuditStore implements AuditStore {
                         }
                     }
                 }
-            } catch (Exception e) {
+                // migrate to JSON
+                persist();
+            } catch (Exception ignore) {
                 // ignore corrupt file
             }
+        } catch (IOException ignore) {
+            // ignore
         }
     }
 
     private void persist() {
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(file))) {
-            out.writeObject(new ArrayList<>(history));
-        } catch (IOException e) {
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file.toFile(), new ArrayList<>(history));
+        } catch (IOException ignore) {
             // ignore
         }
     }
