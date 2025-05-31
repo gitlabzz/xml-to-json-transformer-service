@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import javax.xml.stream.XMLStreamException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class XxeTest {
 
     private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
+
+    public XxeTest() throws IOException {
+    }
 
     @Test
     public void externalEntityFails() {

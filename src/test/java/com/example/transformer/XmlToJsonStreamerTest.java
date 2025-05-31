@@ -14,6 +14,9 @@ public class XmlToJsonStreamerTest {
 
     private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
 
+    public XmlToJsonStreamerTest() throws IOException {
+    }
+
     @Test
     public void simpleElement() throws Exception {
         String xml = "<a>Hello</a>";

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,6 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CommentsAndPITest {
 
     private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
+
+    public CommentsAndPITest() throws IOException {
+    }
 
     @Test
     public void commentsAndProcessingInstructionsAreIgnored() throws Exception {

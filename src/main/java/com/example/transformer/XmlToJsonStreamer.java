@@ -29,17 +29,27 @@ public class XmlToJsonStreamer {
     private final JsonFactory jsonFactory;
     private final MappingConfig config;
 
+    /* reusable scratch objects ― created once */
+    private final ByteArrayOutputStream scratch = new ByteArrayOutputStream(64);
+    private final JsonGenerator scratchGen;
+
     @Autowired
-    public XmlToJsonStreamer(MappingConfig config) {
+    public XmlToJsonStreamer(MappingConfig config) throws IOException {
         this.config = config;
         JsonFactory f = JsonFactory.builder()
                 .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
                 .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                 .build();
         this.jsonFactory = f;
+
+        /* create the scratch generator only once */
+        this.scratchGen = jsonFactory.createGenerator(scratch);
+        this.scratchGen.configure(
+                JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        this.scratchGen.setPrettyPrinter(new CompactPrettyPrinter());
     }
 
-    public XmlToJsonStreamer() {
+    public XmlToJsonStreamer() throws IOException {
         this(new MappingConfig());
     }
 
@@ -101,19 +111,16 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        ByteArrayOutputStream buf = scratch;
+        JsonGenerator tmp = scratchGen;
 
-        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
-
-        tmp.setPrettyPrinter(new CompactPrettyPrinter());
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
                 buf.reset();
+                tmp.flush();
                 readElement(reader, tmp);
                 tmp.flush();
                 state.add(buf.toString(StandardCharsets.UTF_8));
@@ -125,7 +132,6 @@ public class XmlToJsonStreamer {
                 break;
             }
         }
-        tmp.close();
 
         if (attributes.isEmpty() && children.isEmpty()) {
             out.writeString(text.toString());
