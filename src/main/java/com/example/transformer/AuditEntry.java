@@ -30,8 +30,10 @@ public class AuditEntry implements java.io.Serializable {
             @JsonProperty("responseTime") long responseTime,
             @JsonProperty("success") boolean success,
             @JsonProperty("durationMs") long durationMs,
-            @JsonProperty(value = "xmlData", aliases = {"xml"}) byte[] xmlData,
-            @JsonProperty(value = "jsonData", aliases = {"json"}) byte[] jsonData,
+            @JsonProperty("xmlData")
+            @JsonAlias("xml") byte[] xmlData,
+            @JsonProperty("jsonData")
+            @JsonAlias("json") byte[] jsonData,
             @JsonProperty("compressed") boolean compressed) {
         this.id = id;
         this.clientIp = clientIp;
