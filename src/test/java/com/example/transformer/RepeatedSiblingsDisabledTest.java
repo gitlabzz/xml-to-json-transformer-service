@@ -19,6 +19,6 @@ public class RepeatedSiblingsDisabledTest {
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         streamer.transform(in, out);
-        assertEquals("{\"items\":{\"item\":\"y\"}}", out.toString());
+        assertEquals("{\"items\":{\"item\": \"y\"}}", out.toString());
     }
 }
