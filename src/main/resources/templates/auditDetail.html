@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>Audit Detail</title>
+<style>
+pre {border:1px solid #ccc; padding:10px; overflow:auto;}
+.container {display:flex;}
+.column {flex:1; margin-right:10px;}
+</style>
+</head>
+<body>
+<h2 th:text="'Entry ' + ${entry.id}"></h2>
+<div class="container">
+<div class="column">
+<h3>XML</h3>
+<pre th:text="${entry.xml}"></pre>
+</div>
+<div class="column">
+<h3>JSON</h3>
+<pre th:text="${entry.json}"></pre>
+</div>
+</div>
+<ul>
+<li><b>Client:</b> <span th:text="${entry.clientIp}"></span></li>
+<li><b>Request:</b> <span th:text="${#dates.format(entry.requestTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
+<li><b>Response:</b> <span th:text="${#dates.format(entry.responseTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
+<li><b>Duration:</b> <span th:text="${entry.durationMs}"></span> ms</li>
+<li><b>Status:</b> <span th:text="${entry.success}"></span></li>
+</ul>
+<a href="/audit">Back to list</a>
+</body>
+</html>

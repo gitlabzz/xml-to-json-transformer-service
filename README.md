@@ -34,7 +34,7 @@ The tests also cover unicode handling, repeated siblings and ignoring XML commen
 
 ### Configuration
 
-`MappingConfig` exposes the following properties which can be overridden via `application.properties`:
+`MappingConfig` exposes the following properties which can be overridden via `application.yml`:
 
 ```
 mapping.attribute-prefix=@
@@ -43,4 +43,20 @@ mapping.arrays-for-repeated-siblings=true
 ```
 
 These allow customizing how attributes, text content and repeated elements are represented in the produced JSON.
+
+### Audit History
+
+The service keeps a bounded in-memory history of recent transformations. The history size,
+page size for the HTML views and whether the stored payloads are compressed can be configured
+using the following properties:
+
+```
+audit.history-size=100
+audit.page-size=20
+audit.compress=true
+```
+
+Environment specific variants of `application.yml` can be placed alongside the default file
+using the naming convention `application-{profile}.yml` (e.g. `application-dev.yml`). The active
+profile is selected via the standard Spring Boot `spring.profiles.active` property.
 
