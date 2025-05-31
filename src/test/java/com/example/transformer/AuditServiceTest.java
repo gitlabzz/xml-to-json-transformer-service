@@ -10,8 +10,7 @@ public class AuditServiceTest {
     public void addAndRetrieve() throws Exception {
         AuditProperties props = new AuditProperties();
         props.setCompress(false);
-        InMemoryAuditStore store = new InMemoryAuditStore(10);
-        AuditService service = new AuditService(props, store);
+        AuditService service = new AuditService(props);
 
         service.add("127.0.0.1", 0L, 1L, true, "<a/>".getBytes(), "{}".getBytes());
 

@@ -14,7 +14,7 @@ public class AuditConfiguration {
     }
 
     @Bean
-    public AuditService auditService(AuditStore store, AuditProperties props) {
-        return new AuditService(props, store);
+    public AuditService auditService(AuditProperties props) {
+        return new AuditService(props);
     }
 }
