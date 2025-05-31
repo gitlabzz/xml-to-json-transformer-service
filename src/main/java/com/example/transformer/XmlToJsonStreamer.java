@@ -2,7 +2,7 @@ package com.example.transformer;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) {
         this.config = config;
         this.jsonFactory = JsonFactory.builder()
-                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+                .configure(Feature.ESCAPE_NON_ASCII, false)
                 .build();
     }
 
@@ -120,16 +120,12 @@ public class XmlToJsonStreamer {
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
                 String name = e.getKey();
                 ChildState state = e.getValue();
+                out.writeFieldName(name);
                 if (state.fragments.size() == 1 || !config.isArraysForRepeatedSiblings()) {
-                    out.writeFieldName(name);
                     out.writeRawValue(state.fragments.get(state.fragments.size() - 1));
                 } else {
-                    out.writeFieldName(name);
-                    out.writeStartArray();
-                    for (String fragment : state.fragments) {
-                        out.writeRawValue(fragment);
-                    }
-                    out.writeEndArray();
+                    String joined = String.join(",", state.fragments);
+                    out.writeRawValue("[" + joined + "]");
                 }
             }
             out.writeEndObject();
