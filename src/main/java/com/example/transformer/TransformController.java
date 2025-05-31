@@ -2,13 +2,14 @@ package com.example.transformer;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import javax.servlet.http.HttpServletRequest;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -24,13 +25,20 @@ public class TransformController {
 
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> transform(@RequestBody byte[] body) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+    public ResponseEntity<StreamingResponseBody> transform(HttpServletRequest request) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try {
-            streamer.transform(new ByteArrayInputStream(body), out);
+            streamer.transform(request.getInputStream(), buffer);
         } catch (XMLStreamException e) {
-            return ResponseEntity.badRequest().body("{\"error\":\"Malformed XML\"}");
+            StreamingResponseBody errBody = out -> out.write("{\"error\":\"Malformed XML\"}".getBytes());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errBody);
+        } catch (IOException e) {
+            StreamingResponseBody errBody = out -> out.write(("{\"error\":\"" + e.getMessage() + "\"}").getBytes());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON).body(errBody);
         }
-        return ResponseEntity.ok(out.toString());
+
+        byte[] json = buffer.toByteArray();
+        StreamingResponseBody body = out -> out.write(json);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body);
     }
 }

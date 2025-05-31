@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CommentsAndPITest {
 
-    private final XmlToJsonStreamer streamer = new XmlToJsonStreamer();
+    private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
 
     @Test
     public void commentsAndProcessingInstructionsAreIgnored() throws Exception {
