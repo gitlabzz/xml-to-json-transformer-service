@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Audit History</title></head>
+<body>
+<table border="1">
+<tr><th>ID</th><th>Client IP</th><th>Request Time</th><th>Status</th></tr>
+<tr th:each="e : ${entries}">
+<td><a th:href="@{'/audit/' + ${e.id}}" th:text="${e.id}">1</a></td>
+<td th:text="${e.clientIp}">ip</td>
+<td th:text="${#dates.format(e.requestTime, 'yyyy-MM-dd HH:mm:ss')}">time</td>
+<td th:text="${e.success}">true</td>
+</tr>
+</table>
+<div>
+<a th:if="${page > 0}" th:href="@{'/audit?page=' + ${page - 1}}">Prev</a>
+<a th:if="${entries.size() == pageSize}" th:href="@{'/audit?page=' + ${page + 1}}">Next</a>
+</div>
+</body>
+</html>
