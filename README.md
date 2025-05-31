@@ -46,14 +46,14 @@ These allow customizing how attributes, text content and repeated elements are r
 
 ### Audit History
 
-The service keeps a bounded in-memory history of recent transformations. The history size,
-page size for the HTML views and whether the stored payloads are compressed can be configured
-using the following properties:
+The service keeps a bounded history of recent transformations. The history can be stored either in memory (default) or persisted to a file. The history size, page size for the HTML views, backend type and whether the stored payloads are compressed can be configured using the following properties:
 
 ```
 audit.history-size=100
 audit.page-size=20
 audit.compress=true
+audit.backend=memory # or 'file'
+audit.file-path=audit-store.ser
 ```
 
 Environment specific variants of `application.yml` can be placed alongside the default file

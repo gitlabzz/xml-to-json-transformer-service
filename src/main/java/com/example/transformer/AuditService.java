@@ -3,22 +3,17 @@ package com.example.transformer;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Service
 public class AuditService {
-    private final Deque<AuditEntry> history = new ArrayDeque<>();
-    private final int maxHistory;
+    private final AuditStore store;
     private final boolean compress;
     private final AtomicLong counter = new AtomicLong();
 
-    public AuditService(AuditProperties props) {
-        this.maxHistory = props.getHistorySize();
+    public AuditService(AuditProperties props, AuditStore store) {
+        this.store = store;
         this.compress = props.isCompress();
     }
 
@@ -28,34 +23,17 @@ public class AuditService {
             byte[] j = compress ? AuditEntry.compress(json) : json;
             AuditEntry entry = new AuditEntry(counter.incrementAndGet(), clientIp, start, end,
                     success, end - start, x, j, compress);
-            synchronized (history) {
-                if (history.size() >= maxHistory) {
-                    history.removeFirst();
-                }
-                history.addLast(entry);
-            }
+            store.save(entry);
         } catch (IOException e) {
             // ignore
         }
     }
 
     public List<AuditEntry> page(int page, int size) {
-        synchronized (history) {
-            return history.stream()
-                    .skip((long) page * size)
-                    .limit(size)
-                    .collect(Collectors.toCollection(ArrayList::new));
-        }
+        return store.page(page, size);
     }
 
     public AuditEntry get(long id) {
-        synchronized (history) {
-            for (AuditEntry e : history) {
-                if (e.getId() == id) {
-                    return e;
-                }
-            }
-        }
-        return null;
+        return store.get(id);
     }
 }

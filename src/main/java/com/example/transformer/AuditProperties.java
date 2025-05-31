@@ -7,6 +7,8 @@ public class AuditProperties {
     private int historySize = 100;
     private int pageSize = 20;
     private boolean compress = true;
+    private String backend = "memory";
+    private String filePath = "audit-store.ser";
 
     public int getHistorySize() {
         return historySize;
@@ -30,5 +32,21 @@ public class AuditProperties {
 
     public void setCompress(boolean compress) {
         this.compress = compress;
+    }
+
+    public String getBackend() {
+        return backend;
+    }
+
+    public void setBackend(String backend) {
+        this.backend = backend;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }

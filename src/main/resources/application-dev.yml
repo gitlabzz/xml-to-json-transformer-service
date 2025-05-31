@@ -2,3 +2,5 @@ audit:
   history-size: 100
   page-size: 20
   compress: true
+  backend: memory
+  file-path: audit-store.ser
