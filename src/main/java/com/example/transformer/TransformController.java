@@ -4,6 +4,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -29,11 +30,11 @@ public class TransformController {
 
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<StreamingResponseBody> transform(HttpServletRequest request) throws IOException {
+    public ResponseEntity<StreamingResponseBody> transform(@RequestBody byte[] xmlBytes,
+                                                          HttpServletRequest request) throws IOException {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
-        byte[] xmlBytes = request.getInputStream().readAllBytes();
         ByteArrayInputStream xmlInput = new ByteArrayInputStream(xmlBytes);
 
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
