@@ -38,19 +38,23 @@ public class TransformController {
         ByteArrayOutputStream xmlBuf = new ByteArrayOutputStream();
         ByteArrayOutputStream jsonBuf = new ByteArrayOutputStream();
 
-        try (InputStream in = new TeeInputStream(request.getInputStream(), xmlBuf);
-             OutputStream out = new TeeOutputStream(response.getOutputStream(), jsonBuf)) {
+        InputStream in = new TeeInputStream(request.getInputStream(), xmlBuf);
+        OutputStream out = new TeeOutputStream(response.getOutputStream(), jsonBuf);
+        boolean success = false;
+        try {
             streamer.transform(in, out);
-            long end = System.currentTimeMillis();
-            auditService.add(clientIp, start, end, true, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+            success = true;
         } catch (XMLStreamException e) {
-            long end = System.currentTimeMillis();
             response.reset();
             response.setStatus(400);
             response.setContentType(MediaType.TEXT_PLAIN_VALUE);
             byte[] msg = e.getMessage() == null ? new byte[0] : e.getMessage().getBytes(StandardCharsets.UTF_8);
             response.getOutputStream().write(msg);
-            auditService.add(clientIp, start, end, false, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+        } finally {
+            try { in.close(); } catch (IOException ignore) {}
+            try { out.close(); } catch (IOException ignore) {}
+            long end = System.currentTimeMillis();
+            auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
         }
     }
 
