@@ -48,9 +48,10 @@ mapping.escape-non-ascii=false
 
 These allow customizing how attributes, text content and repeated elements are represented in the produced JSON.
 Root wrapping can be disabled by setting `mapping.wrap-root=false` or using
-`new XmlToJsonStreamerBuilder().wrapRootElement(false)` so that the children of the
-XML root element become the top level JSON fields. Human readable formatting can
-be enabled via `mapping.pretty-print=true` or `new XmlToJsonStreamerBuilder().prettyPrint(true)`.
+`new XmlToJsonStreamerBuilder().config(c -> c.setWrapRoot(false))` so that the
+children of the XML root element become the top level JSON fields. Human
+readable formatting can be enabled via `mapping.pretty-print=true` or
+`new XmlToJsonStreamerBuilder().config(c -> c.setPrettyPrint(true))`.
 Additional options control namespace handling and escaping of non ASCII characters.
 
 ### Audit History
