@@ -1,7 +1,6 @@
 package com.example.transformer;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-@ConfigurationProperties(prefix = "mapping")
+
 public class MappingConfig {
     private String attributePrefix = "@";
     private String textField = "#text";

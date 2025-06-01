@@ -34,7 +34,7 @@ The tests also cover unicode handling, repeated siblings and ignoring XML commen
 
 ### Configuration
 
-`MappingConfig` exposes the following properties which can be overridden via `application.yml` or configured programmatically using the `XmlToJsonStreamer.Builder`:
+`MappingConfig` exposes the following properties which can be overridden via `application.yml` or configured programmatically using the fluent `XmlToJsonStreamer.builder()` API:
 
 ```
 mapping.attribute-prefix=@

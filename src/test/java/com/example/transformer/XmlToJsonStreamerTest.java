@@ -12,7 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlToJsonStreamerTest {
 
-    private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
+    private final XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+            .mappingConfig(new MappingConfig())
+            .build();
 
     public XmlToJsonStreamerTest() throws IOException {
     }
