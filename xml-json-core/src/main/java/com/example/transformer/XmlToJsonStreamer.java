@@ -33,6 +33,7 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) throws IOException {
         this(JsonFactory.builder()
                 .configure(JsonWriteFeature.ESCAPE_NON_ASCII, config.isEscapeNonAscii())
+                .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                 .build(),
              XMLInputFactory.newFactory(),
              config);
@@ -83,6 +84,7 @@ public class XmlToJsonStreamer {
             if (jsonFactory == null) {
                 jsonFactory = JsonFactory.builder()
                         .configure(JsonWriteFeature.ESCAPE_NON_ASCII, mappingConfig.isEscapeNonAscii())
+                        .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                         .build();
             }
             if (xmlInputFactory == null) {
@@ -111,6 +113,7 @@ public class XmlToJsonStreamer {
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
 
         g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
 
         if (config.isPrettyPrint()) {
             g.useDefaultPrettyPrinter();
@@ -157,6 +160,8 @@ public class XmlToJsonStreamer {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream(64);
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
         tmp.setPrettyPrinter(new CompactPrettyPrinter());
 
         while (reader.hasNext()) {
@@ -219,6 +224,7 @@ public class XmlToJsonStreamer {
         JsonGenerator g = jsonFactory.createGenerator(jsonWriter);
 
         g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
 
         if (config.isPrettyPrint()) {
             g.useDefaultPrettyPrinter();

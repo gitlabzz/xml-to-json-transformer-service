@@ -29,6 +29,7 @@ public final class XmlToJsonStreamerBuilder {
         if (jsonFactory == null) {
             jsonFactory = JsonFactory.builder()
                     .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+                    .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                     .build();
         }
         if (xmlFactory == null) {
