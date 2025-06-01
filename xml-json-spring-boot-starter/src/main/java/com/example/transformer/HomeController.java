@@ -15,11 +15,12 @@ public class HomeController {
 
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
+    @Nullable
     private final BuildProperties buildProperties;
     @Nullable
     private final GitProperties gitProperties;
 
-    public HomeController(BuildProperties buildProperties, @Nullable GitProperties gitProperties) {
+    public HomeController(@Nullable BuildProperties buildProperties, @Nullable GitProperties gitProperties) {
         this.buildProperties = buildProperties;
         this.gitProperties = gitProperties;
     }
