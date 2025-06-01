@@ -6,6 +6,10 @@ public class MappingConfig {
     private String attributePrefix = "@";
     private String textField = "#text";
     private boolean arraysForRepeatedSiblings = true;
+    private boolean wrapRoot = true;
+    private boolean prettyPrint = false;
+    private boolean preserveNamespaces = true;
+    private boolean escapeNonAscii = false;
 
     public String getAttributePrefix() {
         return attributePrefix;
@@ -29,5 +33,37 @@ public class MappingConfig {
 
     public void setArraysForRepeatedSiblings(boolean arraysForRepeatedSiblings) {
         this.arraysForRepeatedSiblings = arraysForRepeatedSiblings;
+    }
+
+    public boolean isWrapRoot() {
+        return wrapRoot;
+    }
+
+    public void setWrapRoot(boolean wrapRoot) {
+        this.wrapRoot = wrapRoot;
+    }
+
+    public boolean isPrettyPrint() {
+        return prettyPrint;
+    }
+
+    public void setPrettyPrint(boolean prettyPrint) {
+        this.prettyPrint = prettyPrint;
+    }
+
+    public boolean isPreserveNamespaces() {
+        return preserveNamespaces;
+    }
+
+    public void setPreserveNamespaces(boolean preserveNamespaces) {
+        this.preserveNamespaces = preserveNamespaces;
+    }
+
+    public boolean isEscapeNonAscii() {
+        return escapeNonAscii;
+    }
+
+    public void setEscapeNonAscii(boolean escapeNonAscii) {
+        this.escapeNonAscii = escapeNonAscii;
     }
 }

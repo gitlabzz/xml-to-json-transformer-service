@@ -34,15 +34,20 @@ The tests also cover unicode handling, repeated siblings and ignoring XML commen
 
 ### Configuration
 
-`MappingConfig` exposes the following properties which can be overridden via `application.yml`:
+`MappingConfig` exposes the following properties which can be overridden via `application.yml` or configured programmatically using the `XmlToJsonStreamer.Builder`:
 
 ```
 mapping.attribute-prefix=@
 mapping.text-field=#text
 mapping.arrays-for-repeated-siblings=true
+mapping.wrap-root=true
+mapping.pretty-print=false
+mapping.preserve-namespaces=true
+mapping.escape-non-ascii=false
 ```
 
 These allow customizing how attributes, text content and repeated elements are represented in the produced JSON.
+Additional options control root wrapping, pretty printing, namespace handling and escaping of non ASCII characters.
 
 ### Audit History
 

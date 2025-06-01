@@ -5,8 +5,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.core.io.SerializedString;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,43 +16,75 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@Component
 public class XmlToJsonStreamer {
 
     private static final Logger logger = LoggerFactory.getLogger(XmlToJsonStreamer.class);
 
     private final JsonFactory jsonFactory;
+    private final XMLInputFactory xmlFactory;
     private final MappingConfig config;
 
     /* reusable scratch objects ― created once */
     private final ByteArrayOutputStream scratch = new ByteArrayOutputStream(64);
     private final JsonGenerator scratchGen;
 
-    @Autowired
     public XmlToJsonStreamer(MappingConfig config) throws IOException {
-        this.config = config;
-        JsonFactory f = JsonFactory.builder()
-                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, false)
+        this(JsonFactory.builder()
+                .configure(JsonWriteFeature.ESCAPE_NON_ASCII, config.isEscapeNonAscii())
                 .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
-                .build();
-        this.jsonFactory = f;
-
-        /* create the scratch generator only once */
-        this.scratchGen = jsonFactory.createGenerator(scratch);
-        this.scratchGen.configure(
-                JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-        this.scratchGen.setPrettyPrinter(new CompactPrettyPrinter());
+                .build(),
+             XMLInputFactory.newFactory(),
+             config);
     }
 
     public XmlToJsonStreamer() throws IOException {
         this(new MappingConfig());
     }
 
+    private XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlFactory, MappingConfig config) throws IOException {
+        this.config = config;
+        this.jsonFactory = jsonFactory;
+        this.xmlFactory = xmlFactory;
+
+        this.xmlFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+        this.xmlFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+
+        /* create the scratch generator only once */
+        this.scratchGen = jsonFactory.createGenerator(scratch);
+        this.scratchGen.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        this.scratchGen.setPrettyPrinter(new CompactPrettyPrinter());
+    }
+
+    public static class Builder {
+        private JsonFactory jsonFactory;
+        private XMLInputFactory xmlFactory;
+        private MappingConfig config = new MappingConfig();
+
+        public Builder jsonFactory(JsonFactory f) { this.jsonFactory = f; return this; }
+        public Builder xmlFactory(XMLInputFactory f) { this.xmlFactory = f; return this; }
+        public Builder config(MappingConfig c) { this.config = c; return this; }
+
+        public XmlToJsonStreamer build() throws IOException {
+            if (jsonFactory == null) {
+                jsonFactory = JsonFactory.builder()
+                        .configure(JsonWriteFeature.ESCAPE_NON_ASCII, config.isEscapeNonAscii())
+                        .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
+                        .build();
+            }
+            if (xmlFactory == null) {
+                xmlFactory = XMLInputFactory.newFactory();
+            }
+            return new XmlToJsonStreamer(jsonFactory, xmlFactory, config);
+        }
+    }
+
     private String buildQName(String prefix, String local) {
-        if (prefix == null || prefix.isEmpty()) {
+        if (!config.isPreserveNamespaces() || prefix == null || prefix.isEmpty()) {
             return local;
         }
         return prefix + ":" + local;
@@ -62,10 +92,7 @@ public class XmlToJsonStreamer {
 
     public void transform(InputStream xmlInput, OutputStream jsonOutput) throws XMLStreamException, IOException {
         logger.debug("Starting XML to JSON transformation");
-        XMLInputFactory inFactory = XMLInputFactory.newFactory();
-        inFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-        inFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-        XMLStreamReader reader = inFactory.createXMLStreamReader(xmlInput);
+        XMLStreamReader reader = xmlFactory.createXMLStreamReader(xmlInput);
 
         // advance to root element
         while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
@@ -75,13 +102,22 @@ public class XmlToJsonStreamer {
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
 
         g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-        g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
+        g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
 
-        g.setPrettyPrinter(new CompactPrettyPrinter());
-        g.writeStartObject();
-        g.writeFieldName(rootName);
-        readElement(reader, g);
-        g.writeEndObject();
+        if (config.isPrettyPrint()) {
+            g.useDefaultPrettyPrinter();
+        } else {
+            g.setPrettyPrinter(new CompactPrettyPrinter());
+        }
+
+        if (config.isWrapRoot()) {
+            g.writeStartObject();
+            g.writeFieldName(rootName);
+            readElement(reader, g);
+            g.writeEndObject();
+        } else {
+            readElement(reader, g);
+        }
         g.flush();
         g.close();
         reader.close();
@@ -161,5 +197,38 @@ public class XmlToJsonStreamer {
             }
             out.writeEndObject();
         }
+    }
+
+    public void transform(Reader xmlReader, Writer jsonWriter) throws XMLStreamException, IOException {
+        logger.debug("Starting XML to JSON transformation");
+        XMLStreamReader reader = xmlFactory.createXMLStreamReader(xmlReader);
+
+        while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
+        }
+        String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
+        JsonGenerator g = jsonFactory.createGenerator(jsonWriter);
+
+        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+
+        if (config.isPrettyPrint()) {
+            g.useDefaultPrettyPrinter();
+        } else {
+            g.setPrettyPrinter(new CompactPrettyPrinter());
+        }
+
+        if (config.isWrapRoot()) {
+            g.writeStartObject();
+            g.writeFieldName(rootName);
+            readElement(reader, g);
+            g.writeEndObject();
+        } else {
+            readElement(reader, g);
+        }
+        g.flush();
+        g.close();
+        reader.close();
+        xmlReader.close();
+        logger.debug("XML to JSON transformation completed");
     }
 }
