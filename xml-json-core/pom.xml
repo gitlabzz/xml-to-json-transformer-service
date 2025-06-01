@@ -32,6 +32,14 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- Include the Spring Boot starter on the test classpath so that
+             tests can load the application context from the starter module -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>xml-json-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
