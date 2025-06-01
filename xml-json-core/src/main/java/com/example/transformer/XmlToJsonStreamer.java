@@ -137,9 +137,7 @@ public class XmlToJsonStreamer {
     }
 
     private static class ChildState {
-        ByteArrayOutputStream buffer;
-        int count;
-        boolean arrayStarted;
+        List<String> values = new ArrayList<>();
     }
 
     private void readElement(XMLStreamReader reader, JsonGenerator out) throws XMLStreamException, IOException {
@@ -156,38 +154,20 @@ public class XmlToJsonStreamer {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
-                ChildState state = children.get(childName);
-                if (state == null) {
-                    state = new ChildState();
-                    state.count = 1;
-                    state.buffer = new ByteArrayOutputStream(64);
-                    JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
-                    tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
-                    tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-                    tmp.setPrettyPrinter(new CompactPrettyPrinter());
-                    readElement(reader, tmp);
-                    tmp.close();
-                    children.put(childName, state);
+                ChildState state = children.computeIfAbsent(childName, k -> new ChildState());
+                ByteArrayOutputStream buf = new ByteArrayOutputStream(64);
+                JsonGenerator tmp = jsonFactory.createGenerator(buf);
+                tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+                tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+                tmp.setPrettyPrinter(new CompactPrettyPrinter());
+                readElement(reader, tmp);
+                tmp.close();
+                String json = buf.toString(StandardCharsets.UTF_8);
+                if (config.isArraysForRepeatedSiblings()) {
+                    state.values.add(json);
                 } else {
-                    state.count++;
-                    if (config.isArraysForRepeatedSiblings()) {
-                        if (!state.arrayStarted) {
-                            out.writeFieldName(childName);
-                            out.writeStartArray();
-                            out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
-                            state.arrayStarted = true;
-                            state.buffer = null;
-                        }
-                        readElement(reader, out);
-                    } else {
-                        state.buffer.reset();
-                        JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
-                        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
-                        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-                        tmp.setPrettyPrinter(new CompactPrettyPrinter());
-                        readElement(reader, tmp);
-                        tmp.close();
-                    }
+                    state.values.clear();
+                    state.values.add(json);
                 }
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
@@ -209,13 +189,18 @@ public class XmlToJsonStreamer {
                 out.writeStringField(config.getTextField(), text.toString());
             }
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
-                ChildState state = e.getValue();
                 String name = e.getKey();
-                if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
+                ChildState state = e.getValue();
+                if (config.isArraysForRepeatedSiblings() && state.values.size() > 1) {
                     out.writeFieldName(name);
-                    out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
-                } else if (state.arrayStarted) {
+                    out.writeStartArray();
+                    for (String val : state.values) {
+                        out.writeRawValue(val);
+                    }
                     out.writeEndArray();
+                } else if (!state.values.isEmpty()) {
+                    out.writeFieldName(name);
+                    out.writeRawValue(state.values.get(state.values.size() - 1));
                 }
             }
             out.writeEndObject();
