@@ -48,7 +48,7 @@ public class XmlToJsonStreamer {
 
     public static Builder builder() { return new Builder(); }
 
-    private XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlInputFactory, MappingConfig config) throws IOException {
+    public XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlInputFactory, MappingConfig config) throws IOException {
         this.config = config;
         this.jsonFactory = jsonFactory;
         this.xmlInputFactory = xmlInputFactory;

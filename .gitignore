@@ -1,2 +1,4 @@
 /.idea/
 /target/
+/xml-json-spring-boot-starter/target/
+/xml-json-core/target/
