@@ -34,7 +34,7 @@ The tests also cover unicode handling, repeated siblings and ignoring XML commen
 
 ### Configuration
 
-`MappingConfig` exposes the following properties which can be overridden via `application.yml` or configured programmatically using the fluent `XmlToJsonStreamer.builder()` API:
+`MappingConfig` exposes the following properties which can be overridden via `application.yml` or configured programmatically using the fluent `new XmlToJsonStreamerBuilder()` API:
 
 ```
 mapping.attribute-prefix=@
@@ -48,9 +48,9 @@ mapping.escape-non-ascii=false
 
 These allow customizing how attributes, text content and repeated elements are represented in the produced JSON.
 Root wrapping can be disabled by setting `mapping.wrap-root=false` or using
-`XmlToJsonStreamer.builder().wrapRootElement(false)` so that the children of the
+`new XmlToJsonStreamerBuilder().wrapRootElement(false)` so that the children of the
 XML root element become the top level JSON fields. Human readable formatting can
-be enabled via `mapping.pretty-print=true` or `XmlToJsonStreamer.builder().prettyPrint(true)`.
+be enabled via `mapping.pretty-print=true` or `new XmlToJsonStreamerBuilder().prettyPrint(true)`.
 Additional options control namespace handling and escaping of non ASCII characters.
 
 ### Audit History
