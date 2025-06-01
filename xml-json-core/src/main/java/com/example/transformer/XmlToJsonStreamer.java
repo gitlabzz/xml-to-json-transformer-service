@@ -33,7 +33,9 @@ public class XmlToJsonStreamer {
     public XmlToJsonStreamer(MappingConfig config) throws IOException {
         this(JsonFactory.builder()
                 .configure(JsonWriteFeature.ESCAPE_NON_ASCII, config.isEscapeNonAscii())
-                .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
+                // Older Jackson versions (as used by Spring Boot) may not expose
+                // the COMBINE_UNICODE_SURROGATES_IN_UTF8 feature. Simply omit
+                // the configuration so the code runs with any Jackson version.
                 .build(),
              XMLInputFactory.newFactory(),
              config);
@@ -84,7 +86,10 @@ public class XmlToJsonStreamer {
             if (jsonFactory == null) {
                 jsonFactory = JsonFactory.builder()
                         .configure(JsonWriteFeature.ESCAPE_NON_ASCII, mappingConfig.isEscapeNonAscii())
-                        .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
+                        // The COMBINE_UNICODE_SURROGATES_IN_UTF8 feature does not
+                        // exist on older Jackson versions, so avoid configuring it
+                        // to retain compatibility with the version included in
+                        // Spring Boot.
                         .build();
             }
             if (xmlInputFactory == null) {
@@ -112,7 +117,9 @@ public class XmlToJsonStreamer {
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonOutput);
 
-        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        // Configure features that exist across Jackson versions. The
+        // COMBINE_UNICODE_SURROGATES_IN_UTF8 feature is optional and
+        // may not be present in the Jackson version provided by Spring Boot.
         g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
 
         if (config.isPrettyPrint()) {
@@ -160,7 +167,8 @@ public class XmlToJsonStreamer {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream(64);
         JsonGenerator tmp = jsonFactory.createGenerator(buf);
-        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        // COMBINE_UNICODE_SURROGATES_IN_UTF8 may not be supported; use defaults
+        // that work on any Jackson version.
         tmp.setPrettyPrinter(new CompactPrettyPrinter());
 
         while (reader.hasNext()) {
@@ -222,7 +230,7 @@ public class XmlToJsonStreamer {
         String rootName = buildQName(reader.getPrefix(), reader.getLocalName());
         JsonGenerator g = jsonFactory.createGenerator(jsonWriter);
 
-        g.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        // Only configure features that are guaranteed to exist
         g.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
 
         if (config.isPrettyPrint()) {
