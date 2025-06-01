@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UnicodeTest {
 
-    private final XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
+    private final XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+            .mappingConfig(new MappingConfig())
+            .build();
 
     public UnicodeTest() throws IOException {
     }

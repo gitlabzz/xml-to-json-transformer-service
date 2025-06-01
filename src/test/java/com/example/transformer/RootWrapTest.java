@@ -14,7 +14,9 @@ public class RootWrapTest {
     public void unwrapRoot() throws Exception {
         MappingConfig cfg = new MappingConfig();
         cfg.setWrapRoot(false);
-        XmlToJsonStreamer streamer = new XmlToJsonStreamer(cfg);
+        XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+                .mappingConfig(cfg)
+                .build();
         String xml = "<a>v</a>";
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -26,7 +28,9 @@ public class RootWrapTest {
     public void readerWriter() throws Exception {
         MappingConfig cfg = new MappingConfig();
         cfg.setPrettyPrint(true);
-        XmlToJsonStreamer streamer = new XmlToJsonStreamer(cfg);
+        XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+                .mappingConfig(cfg)
+                .build();
         java.io.StringReader reader = new java.io.StringReader("<x><y>z</y></x>");
         java.io.StringWriter writer = new java.io.StringWriter();
         streamer.transform(reader, writer);

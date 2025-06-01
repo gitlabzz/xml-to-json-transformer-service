@@ -52,7 +52,9 @@ public class LargeStreamTest {
 
     @Test
     public void streamerLargeDocument() throws Exception {
-        XmlToJsonStreamer streamer = new XmlToJsonStreamer(new MappingConfig());
+        XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+                .mappingConfig(new MappingConfig())
+                .build();
 
         StringBuilder sb = new StringBuilder();
         sb.append("<items>");

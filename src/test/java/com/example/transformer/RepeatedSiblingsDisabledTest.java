@@ -14,7 +14,9 @@ public class RepeatedSiblingsDisabledTest {
     public void noArrayUsesLastValue() throws Exception {
         MappingConfig cfg = new MappingConfig();
         cfg.setArraysForRepeatedSiblings(false);
-        XmlToJsonStreamer streamer = new XmlToJsonStreamer(cfg);
+        XmlToJsonStreamer streamer = XmlToJsonStreamer.builder()
+                .mappingConfig(cfg)
+                .build();
         String xml = "<items><item>x</item><item>y</item></items>";
         ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();

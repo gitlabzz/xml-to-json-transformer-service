@@ -26,7 +26,7 @@ public class XmlToJsonStreamer {
     private static final Logger logger = LoggerFactory.getLogger(XmlToJsonStreamer.class);
 
     private final JsonFactory jsonFactory;
-    private final XMLInputFactory xmlFactory;
+    private final XMLInputFactory xmlInputFactory;
     private final MappingConfig config;
 
     /* reusable scratch objects ― created once */
@@ -46,13 +46,15 @@ public class XmlToJsonStreamer {
         this(new MappingConfig());
     }
 
-    private XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlFactory, MappingConfig config) throws IOException {
+    public static Builder builder() { return new Builder(); }
+
+    private XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlInputFactory, MappingConfig config) throws IOException {
         this.config = config;
         this.jsonFactory = jsonFactory;
-        this.xmlFactory = xmlFactory;
+        this.xmlInputFactory = xmlInputFactory;
 
-        this.xmlFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-        this.xmlFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+        this.xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+        this.xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
 
         /* create the scratch generator only once */
         this.scratchGen = jsonFactory.createGenerator(scratch);
@@ -62,24 +64,24 @@ public class XmlToJsonStreamer {
 
     public static class Builder {
         private JsonFactory jsonFactory;
-        private XMLInputFactory xmlFactory;
-        private MappingConfig config = new MappingConfig();
+        private XMLInputFactory xmlInputFactory;
+        private MappingConfig mappingConfig = new MappingConfig();
 
         public Builder jsonFactory(JsonFactory f) { this.jsonFactory = f; return this; }
-        public Builder xmlFactory(XMLInputFactory f) { this.xmlFactory = f; return this; }
-        public Builder config(MappingConfig c) { this.config = c; return this; }
+        public Builder xmlInputFactory(XMLInputFactory f) { this.xmlInputFactory = f; return this; }
+        public Builder mappingConfig(MappingConfig c) { this.mappingConfig = c; return this; }
 
         public XmlToJsonStreamer build() throws IOException {
             if (jsonFactory == null) {
                 jsonFactory = JsonFactory.builder()
-                        .configure(JsonWriteFeature.ESCAPE_NON_ASCII, config.isEscapeNonAscii())
+                        .configure(JsonWriteFeature.ESCAPE_NON_ASCII, mappingConfig.isEscapeNonAscii())
                         .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                         .build();
             }
-            if (xmlFactory == null) {
-                xmlFactory = XMLInputFactory.newFactory();
+            if (xmlInputFactory == null) {
+                xmlInputFactory = XMLInputFactory.newFactory();
             }
-            return new XmlToJsonStreamer(jsonFactory, xmlFactory, config);
+            return new XmlToJsonStreamer(jsonFactory, xmlInputFactory, mappingConfig);
         }
     }
 
@@ -92,7 +94,7 @@ public class XmlToJsonStreamer {
 
     public void transform(InputStream xmlInput, OutputStream jsonOutput) throws XMLStreamException, IOException {
         logger.debug("Starting XML to JSON transformation");
-        XMLStreamReader reader = xmlFactory.createXMLStreamReader(xmlInput);
+        XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(xmlInput);
 
         // advance to root element
         while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
@@ -201,7 +203,7 @@ public class XmlToJsonStreamer {
 
     public void transform(Reader xmlReader, Writer jsonWriter) throws XMLStreamException, IOException {
         logger.debug("Starting XML to JSON transformation");
-        XMLStreamReader reader = xmlFactory.createXMLStreamReader(xmlReader);
+        XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(xmlReader);
 
         while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT) {
         }
