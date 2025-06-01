@@ -1,18 +1,18 @@
 package com.example.transformer;
 
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 
 @RestController
@@ -29,29 +29,74 @@ public class TransformController {
 
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<StreamingResponseBody> transform(@RequestBody byte[] xml,
-                                                          HttpServletRequest request) {
+    public void transform(HttpServletRequest request, HttpServletResponse response) throws IOException {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        try {
-            streamer.transform(new java.io.ByteArrayInputStream(xml), buffer);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        ByteArrayOutputStream xmlBuf = new ByteArrayOutputStream();
+        ByteArrayOutputStream jsonBuf = new ByteArrayOutputStream();
+
+        try (InputStream in = new TeeInputStream(request.getInputStream(), xmlBuf);
+             OutputStream out = new TeeOutputStream(response.getOutputStream(), jsonBuf)) {
+            streamer.transform(in, out);
             long end = System.currentTimeMillis();
-            auditService.add(clientIp, start, end, true, new byte[0], new byte[0]);
-            byte[] data = buffer.toByteArray();
-            StreamingResponseBody body = out -> out.write(data);
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body);
-        } catch (XMLStreamException | IOException e) {
+            auditService.add(clientIp, start, end, true, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+        } catch (XMLStreamException e) {
             long end = System.currentTimeMillis();
-            auditService.add(clientIp, start, end, false, new byte[0], new byte[0]);
-            byte[] msg = e.getMessage() == null ? new byte[0] : e.getMessage().getBytes();
-            StreamingResponseBody body = out -> out.write(msg);
-            return ResponseEntity.badRequest()
-                    .contentType(MediaType.TEXT_PLAIN)
-                    .body(body);
+            response.reset();
+            response.setStatus(400);
+            response.setContentType(MediaType.TEXT_PLAIN_VALUE);
+            byte[] msg = e.getMessage() == null ? new byte[0] : e.getMessage().getBytes(StandardCharsets.UTF_8);
+            response.getOutputStream().write(msg);
+            auditService.add(clientIp, start, end, false, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+        }
+    }
+
+    private static class TeeInputStream extends java.io.FilterInputStream {
+        private final ByteArrayOutputStream copy;
+        protected TeeInputStream(InputStream in, ByteArrayOutputStream copy) {
+            super(in);
+            this.copy = copy;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (b != -1) {
+                copy.write(b);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int n = super.read(b, off, len);
+            if (n > 0) {
+                copy.write(b, off, n);
+            }
+            return n;
+        }
+    }
+
+    private static class TeeOutputStream extends java.io.FilterOutputStream {
+        private final ByteArrayOutputStream copy;
+        TeeOutputStream(OutputStream out, ByteArrayOutputStream copy) {
+            super(out);
+            this.copy = copy;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            super.write(b);
+            copy.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            super.write(b, off, len);
+            copy.write(b, off, len);
         }
     }
 }
