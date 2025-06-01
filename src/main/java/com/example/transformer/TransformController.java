@@ -47,7 +47,11 @@ public class TransformController {
         } catch (XMLStreamException | IOException e) {
             long end = System.currentTimeMillis();
             auditService.add(clientIp, start, end, false, new byte[0], new byte[0]);
-            return ResponseEntity.badRequest().build();
+            byte[] msg = e.getMessage() == null ? new byte[0] : e.getMessage().getBytes();
+            StreamingResponseBody body = out -> out.write(msg);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(body);
         }
     }
 }
