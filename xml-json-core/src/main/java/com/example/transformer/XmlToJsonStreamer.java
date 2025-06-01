@@ -29,9 +29,6 @@ public class XmlToJsonStreamer {
     private final XMLInputFactory xmlInputFactory;
     private final MappingConfig config;
 
-    /* reusable scratch objects ― created once */
-    private final ByteArrayOutputStream scratch = new ByteArrayOutputStream(64);
-    private final JsonGenerator scratchGen;
 
     public XmlToJsonStreamer(MappingConfig config) throws IOException {
         this(JsonFactory.builder()
@@ -56,10 +53,6 @@ public class XmlToJsonStreamer {
         this.xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
         this.xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
 
-        /* create the scratch generator only once */
-        this.scratchGen = jsonFactory.createGenerator(scratch);
-        this.scratchGen.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-        this.scratchGen.setPrettyPrinter(new CompactPrettyPrinter());
     }
 
     public static class Builder {
@@ -165,8 +158,10 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
-        ByteArrayOutputStream buf = scratch;
-        JsonGenerator tmp = scratchGen;
+        ByteArrayOutputStream buf = new ByteArrayOutputStream(64);
+        JsonGenerator tmp = jsonFactory.createGenerator(buf);
+        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+        tmp.setPrettyPrinter(new CompactPrettyPrinter());
 
         while (reader.hasNext()) {
             int event = reader.next();
@@ -215,6 +210,7 @@ public class XmlToJsonStreamer {
             }
             out.writeEndObject();
         }
+        tmp.close();
     }
 
     public void transform(Reader xmlReader, Writer jsonWriter) throws XMLStreamException, IOException {
