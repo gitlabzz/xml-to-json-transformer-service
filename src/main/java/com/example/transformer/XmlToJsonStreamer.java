@@ -70,6 +70,22 @@ public class XmlToJsonStreamer {
         public Builder jsonFactory(JsonFactory f) { this.jsonFactory = f; return this; }
         public Builder xmlInputFactory(XMLInputFactory f) { this.xmlInputFactory = f; return this; }
         public Builder mappingConfig(MappingConfig c) { this.mappingConfig = c; return this; }
+        /**
+         * Configure whether the resulting JSON should include the XML root element
+         * as a wrapper object.
+         */
+        public Builder wrapRootElement(boolean b) {
+            this.mappingConfig.setWrapRootElement(b);
+            return this;
+        }
+
+        /**
+         * Enable human readable pretty printed JSON output.
+         */
+        public Builder prettyPrint(boolean b) {
+            this.mappingConfig.setPrettyPrint(b);
+            return this;
+        }
 
         public XmlToJsonStreamer build() throws IOException {
             if (jsonFactory == null) {
