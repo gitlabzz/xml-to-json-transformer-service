@@ -17,8 +17,11 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileAuditStore implements AuditStore {
+    private static final Logger logger = LoggerFactory.getLogger(FileAuditStore.class);
     private final Path file;
     private final Deque<AuditEntry> history = new ConcurrentLinkedDeque<>();
     private final int maxHistory;
@@ -58,19 +61,19 @@ public class FileAuditStore implements AuditStore {
                 }
                 // migrate to JSON
                 persist();
-            } catch (Exception ignore) {
-                // ignore corrupt file
+            } catch (Exception e) {
+                logger.warn("Failed to load legacy audit file {}", file, e);
             }
-        } catch (IOException ignore) {
-            // ignore
+        } catch (IOException e) {
+            logger.warn("Failed to load audit file {}", file, e);
         }
     }
 
     private void persist() {
         try {
             mapper.writerWithDefaultPrettyPrinter().writeValue(file.toFile(), new ArrayList<>(history));
-        } catch (IOException ignore) {
-            // ignore
+        } catch (IOException e) {
+            logger.warn("Failed to persist audit file {}", file, e);
         }
     }
 
