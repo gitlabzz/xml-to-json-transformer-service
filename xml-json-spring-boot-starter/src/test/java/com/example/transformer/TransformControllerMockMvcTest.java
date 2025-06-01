@@ -8,6 +8,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.example.transformer.XmlToJsonStreamer;
 import com.example.transformer.AuditService;
+import javax.xml.stream.XMLStreamException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.any;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +39,9 @@ public class TransformControllerMockMvcTest {
 
     @Test
     public void malformedXml() throws Exception {
+        doThrow(new XMLStreamException("invalid"))
+                .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
+
         mockMvc.perform(post("/transform")
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>"))
