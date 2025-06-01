@@ -137,15 +137,9 @@ public class XmlToJsonStreamer {
     }
 
     private static class ChildState {
-        final List<String> fragments = new ArrayList<>();
-        String lastFragment;
-        int count = 0;
-
-        void add(String fragment) {
-            fragments.add(fragment);
-            lastFragment = fragment;
-            count++;
-        }
+        ByteArrayOutputStream buffer;
+        int count;
+        boolean arrayStarted;
     }
 
     private void readElement(XMLStreamReader reader, JsonGenerator out) throws XMLStreamException, IOException {
@@ -158,22 +152,43 @@ public class XmlToJsonStreamer {
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
 
-        ByteArrayOutputStream buf = new ByteArrayOutputStream(64);
-        JsonGenerator tmp = jsonFactory.createGenerator(buf);
-        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
-        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
-        tmp.setPrettyPrinter(new CompactPrettyPrinter());
-
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
-                ChildState state = children.computeIfAbsent(childName, n -> new ChildState());
-                buf.reset();
-                tmp.flush();
-                readElement(reader, tmp);
-                tmp.flush();
-                state.add(buf.toString(StandardCharsets.UTF_8));
+                ChildState state = children.get(childName);
+                if (state == null) {
+                    state = new ChildState();
+                    state.count = 1;
+                    state.buffer = new ByteArrayOutputStream(64);
+                    JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
+                    tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+                    tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+                    tmp.setPrettyPrinter(new CompactPrettyPrinter());
+                    readElement(reader, tmp);
+                    tmp.close();
+                    children.put(childName, state);
+                } else {
+                    state.count++;
+                    if (config.isArraysForRepeatedSiblings()) {
+                        if (!state.arrayStarted) {
+                            out.writeFieldName(childName);
+                            out.writeStartArray();
+                            out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                            state.arrayStarted = true;
+                            state.buffer = null;
+                        }
+                        readElement(reader, out);
+                    } else {
+                        state.buffer.reset();
+                        JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
+                        tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
+                        tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
+                        tmp.setPrettyPrinter(new CompactPrettyPrinter());
+                        readElement(reader, tmp);
+                        tmp.close();
+                    }
+                }
             } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
                 if (!reader.isWhiteSpace()) {
                     text.append(reader.getText());
@@ -194,24 +209,17 @@ public class XmlToJsonStreamer {
                 out.writeStringField(config.getTextField(), text.toString());
             }
             for (Map.Entry<String, ChildState> e : children.entrySet()) {
-                String name = e.getKey();
                 ChildState state = e.getValue();
-                out.writeFieldName(name);
-                if (!config.isArraysForRepeatedSiblings()) {
-                    out.writeRawValue(state.lastFragment);
-                } else if (state.count == 1) {
-                    out.writeRawValue(state.fragments.get(0));
-                } else {
-                    out.writeStartArray();
-                    for (String fragment : state.fragments) {
-                        out.writeRawValue(fragment);
-                    }
+                String name = e.getKey();
+                if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
+                    out.writeFieldName(name);
+                    out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                } else if (state.arrayStarted) {
                     out.writeEndArray();
                 }
             }
             out.writeEndObject();
         }
-        tmp.close();
     }
 
     public void transform(Reader xmlReader, Writer jsonWriter) throws XMLStreamException, IOException {
