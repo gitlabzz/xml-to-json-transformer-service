@@ -151,10 +151,23 @@ public class XmlToJsonStreamer {
 
         StringBuilder text = new StringBuilder();
         Map<String, ChildState> children = new LinkedHashMap<>();
+        boolean objectStarted = false;
+
+        if (!attributes.isEmpty()) {
+            out.writeStartObject();
+            for (Map.Entry<String, String> e : attributes.entrySet()) {
+                out.writeStringField(config.getAttributePrefix() + e.getKey(), e.getValue());
+            }
+            objectStarted = true;
+        }
 
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
+                if (!objectStarted) {
+                    out.writeStartObject();
+                    objectStarted = true;
+                }
                 String childName = buildQName(reader.getPrefix(), reader.getLocalName());
                 ChildState state = children.get(childName);
                 if (state == null) {
@@ -198,28 +211,26 @@ public class XmlToJsonStreamer {
             }
         }
 
-        if (attributes.isEmpty() && children.isEmpty()) {
+        if (!objectStarted) {
             out.writeString(text.toString());
-        } else {
-            out.writeStartObject();
-            for (Map.Entry<String, String> e : attributes.entrySet()) {
-                out.writeStringField(config.getAttributePrefix() + e.getKey(), e.getValue());
-            }
-            if (text.length() > 0) {
-                out.writeStringField(config.getTextField(), text.toString());
-            }
-            for (Map.Entry<String, ChildState> e : children.entrySet()) {
-                ChildState state = e.getValue();
-                String name = e.getKey();
-                if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
-                    out.writeFieldName(name);
-                    out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
-                } else if (state.arrayStarted) {
-                    out.writeEndArray();
-                }
-            }
-            out.writeEndObject();
+            return;
         }
+
+        for (Map.Entry<String, ChildState> e : children.entrySet()) {
+            String name = e.getKey();
+            ChildState state = e.getValue();
+            if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
+                out.writeFieldName(name);
+                out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+            } else if (state.arrayStarted) {
+                out.writeEndArray();
+            }
+        }
+        if (text.length() > 0) {
+            out.writeFieldName(config.getTextField());
+            out.writeString(text.toString());
+        }
+        out.writeEndObject();
     }
 
     public void transform(Reader xmlReader, Writer jsonWriter) throws XMLStreamException, IOException {
