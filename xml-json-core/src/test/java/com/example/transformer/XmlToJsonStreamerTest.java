@@ -37,8 +37,6 @@ public class XmlToJsonStreamerTest {
     public void mixedContent() throws Exception {
         String xml = "<p>Hello<b>x</b></p>";
         String expected = "{\"p\":{\"b\":\"x\",\"#text\":\"Hello\"}}";
-        System.out.println("xml: " + xml);
-        System.out.println("json: " + transform(xml));
         assertEquals(expected, transform(xml));
     }
 
