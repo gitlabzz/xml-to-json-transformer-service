@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="60">
+
+    <!-- =========================================================
+         VARIABLES – change once, used many times
+    ========================================================== -->
+    <Properties>
+        <!-- Where log files live inside container / host -->
+        <Property name="LOG_DIR">logs</Property>
+
+        <!-- File name prefix (e.g. application-worker.log)        -->
+        <Property name="LOG_FILE_BASENAME">application</Property>
+
+        <!-- Root level picked up from ENV if present -->
+        <Property name="ROOT_LEVEL">${env:ROOT_LOG_LEVEL:-INFO}</Property>
+    </Properties>
+
+    <!-- =========================================================
+         APPENDERS
+    ========================================================== -->
+    <!-- Console: pretty colours when running under IDEA or kubectl logs -->
+    <Appender type="Console" name="Console">
+        <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1.} [%t] %m%n"/>
+    </Appender>
+
+    <!-- Rolling file: 100 MB chunks, one folder per day, 30 days retention -->
+    <Appender type="RollingFile" name="RollingFile"
+              fileName="${LOG_DIR}/${LOG_FILE_BASENAME}.log"
+              filePattern="${LOG_DIR}/%d{yyyy-MM-dd}/${LOG_FILE_BASENAME}-%i.log.gz">
+
+        <PatternLayout>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %c{1.} [%t] %m%n</pattern>
+        </PatternLayout>
+
+        <Policies>
+            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            <SizeBasedTriggeringPolicy size="100 MB"/>
+        </Policies>
+
+        <DefaultRolloverStrategy max="30"/>
+    </Appender>
+
+    <!-- OPTIONAL: Async wrapper to remove IO cost from business threads -->
+    <AppenderRef name="AsyncConsole" ref="Console" type="Async"/>
+    <AppenderRef name="AsyncFile" ref="RollingFile" type="Async"/>
+
+    <!-- OPTIONAL: JDBC appender template (disabled by default) -->
+    <!--
+    <Appender type="JDBC" name="LogDB" tableName="application_logs">
+        <ConnectionFactory class="com.example.logging.LogDSFactory" method="getConnection"/>
+        <Column name="ts"        pattern="%d{yyyy-MM-dd HH:mm:ss.SSS}"/>
+        <Column name="level"     pattern="%p"/>
+        <Column name="logger"    pattern="%c"/>
+        <Column name="thread"    pattern="%t"/>
+        <Column name="message"   pattern="%m"/>
+        <Column name="stacktrace" pattern="%ex{full}"/>
+    </Appender>
+    -->
+
+    <!-- =========================================================
+         LOGGERS
+    ========================================================== -->
+    <Loggers>
+
+        <!-- Override noisy libs first -->
+        <Logger name="org.springframework" level="INFO"/>
+        <Logger name="org.springframework.web" level="WARN"/>
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+        </Logger>
+
+        <!-- Your application packages – adjust as you like -->
+        <Logger name="com.example.transformer" level="DEBUG"/>
+
+        <!-- Catch-all -->
+        <Root level="${ROOT_LEVEL}">
+            <AppenderRef ref="AsyncConsole"/>
+            <AppenderRef ref="AsyncFile"/>
+            <!-- <AppenderRef ref="LogDB"/> -->
+        </Root>
+    </Loggers>
+</Configuration>
