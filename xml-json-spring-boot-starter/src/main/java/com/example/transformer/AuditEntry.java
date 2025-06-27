@@ -3,7 +3,14 @@ package com.example.transformer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.ObjectMapper; // --- ADDED ---
+import com.fasterxml.jackson.databind.SerializationFeature; // --- ADDED ---
 
+import javax.xml.transform.OutputKeys; // --- ADDED ---
+import javax.xml.transform.Transformer; // --- ADDED ---
+import javax.xml.transform.TransformerFactory; // --- ADDED ---
+import javax.xml.transform.stream.StreamResult; // --- ADDED ---
+import javax.xml.transform.stream.StreamSource; // --- ADDED ---
 import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -22,6 +29,7 @@ public class AuditEntry implements java.io.Serializable {
     private final byte[] jsonData;
     private final boolean compressed;
 
+    // --- No changes to the constructor ---
     @JsonCreator
     public AuditEntry(
             @JsonProperty("id") long id,
@@ -46,39 +54,70 @@ public class AuditEntry implements java.io.Serializable {
         this.compressed = compressed;
     }
 
-    public long getId() {
-        return id;
-    }
+    // --- No changes to simple getters ---
+    public long getId() { return id; }
+    public String getClientIp() { return clientIp; }
+    public long getRequestTime() { return requestTime; }
+    public long getResponseTime() { return responseTime; }
+    public boolean isSuccess() { return success; }
+    public long getDurationMs() { return durationMs; }
 
-    public String getClientIp() {
-        return clientIp;
-    }
 
-    public long getRequestTime() {
-        return requestTime;
-    }
-
-    public long getResponseTime() {
-        return responseTime;
-    }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public long getDurationMs() {
-        return durationMs;
-    }
-
+    // --- MODIFIED getXml() method ---
     public String getXml() throws IOException {
-        return new String(decompress(xmlData), java.nio.charset.StandardCharsets.UTF_8);
+        byte[] decompressed = decompress(xmlData);
+        if (decompressed.length == 0) return "";
+        try {
+            return prettyPrintXml(new String(decompressed, java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            // Fallback to raw string if formatting fails
+            return new String(decompressed, java.nio.charset.StandardCharsets.UTF_8);
+        }
     }
 
+    // --- MODIFIED getJson() method ---
     public String getJson() throws IOException {
-        return new String(decompress(jsonData), java.nio.charset.StandardCharsets.UTF_8);
+        byte[] decompressed = decompress(jsonData);
+        if (decompressed.length == 0) return "";
+        try {
+            return prettyPrintJson(new String(decompressed, java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            // Fallback to raw string if formatting fails
+            return new String(decompressed, java.nio.charset.StandardCharsets.UTF_8);
+        }
     }
+
+    // --- ADDED: Helper method for pretty-printing JSON ---
+    private String prettyPrintJson(String rawJson) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        // Read the raw JSON into a generic Object
+        Object jsonObject = mapper.readValue(rawJson, Object.class);
+        // Re-write it with indentation enabled
+        return mapper.enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(jsonObject);
+    }
+
+    // --- ADDED: Helper method for pretty-printing XML ---
+    private String prettyPrintXml(String rawXml) throws Exception {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        // This is a security measure to prevent certain types of attacks
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalDTD", "");
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalStylesheet", "");
+
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2"); // Indent by 2 spaces
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes"); // Optional: remove <?xml ...>
+
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
+        StreamSource source = new StreamSource(new StringReader(rawXml));
+        transformer.transform(source, result);
+        return writer.toString();
+    }
+
 
     private byte[] decompress(byte[] data) throws IOException {
+        // --- No changes to decompress() or compress() ---
         if (!compressed) {
             return data;
         }
