@@ -39,4 +39,21 @@ public class InMemoryAuditStore implements AuditStore {
         }
         return null;
     }
+
+    @Override
+    public List<AuditEntry> search(String text) {
+        String lower = text.toLowerCase();
+        return history.stream()
+                .filter(e -> containsIgnoreCase(e, lower))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private boolean containsIgnoreCase(AuditEntry e, String lower) {
+        try {
+            return e.getXml().toLowerCase().contains(lower)
+                    || e.getJson().toLowerCase().contains(lower);
+        } catch (IOException ex) {
+            return false;
+        }
+    }
 }
