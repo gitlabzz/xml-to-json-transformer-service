@@ -23,7 +23,7 @@
     </div>
 </nav>
 
-<div class="container mt-4">
+<div id="app" class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Home</a></li>
@@ -42,14 +42,15 @@
             <th>Status</th>
         </tr>
         </thead>
-        <tbody>
-        <tr th:each="e : ${entries}">
-            <td><a th:href="@{'/audit/' + ${e.id}}" th:text="${e.id}">1</a></td>
-            <td th:text="${e.clientIp}">0:0:0:0:0:0:0:1</td>
-            <td th:text="${#dates.format(e.requestTime, 'yyyy-MM-dd HH:mm:ss')}">2025-06-27 17:48:46</td>
+        <tbody id="auditBody">
+        <tr v-for="e in entries" :key="e.id">
+            <td><a :href="'/audit/' + e.id">{{ e.id }}</a></td>
+            <td>{{ e.clientIp }}</td>
+            <td>{{ formatTime(e.requestTime) }}</td>
             <td>
-                <span th:if="${e.success}" class="badge bg-success">Success</span>
-                <span th:unless="${e.success}" class="badge bg-danger">Failed</span>
+                <span :class="['badge', e.success ? 'bg-success' : 'bg-danger']">
+                    {{ e.success ? 'Success' : 'Failed' }}
+                </span>
             </td>
         </tr>
         </tbody>
@@ -62,9 +63,33 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const app = Vue.createApp({});
-    app.mount('body');
+<script th:inline="javascript">
+    const app = Vue.createApp({
+        data() {
+            return {
+                entries: [[${entries}]],
+                page: [[${page}]],
+                pageSize: [[${pageSize}]]
+            };
+        },
+        methods: {
+            formatTime(ts) {
+                const d = new Date(ts);
+                return d.toISOString().replace('T', ' ').substring(0, 19);
+            },
+            async load() {
+                const resp = await fetch(`/audit/api?page=${this.page}`);
+                if (resp.ok) {
+                    this.entries = await resp.json();
+                }
+            }
+        },
+        mounted() {
+            this.load();
+            setInterval(this.load, 5000);
+        }
+    });
+    app.mount('#app');
 </script>
 </body>
 </html>
