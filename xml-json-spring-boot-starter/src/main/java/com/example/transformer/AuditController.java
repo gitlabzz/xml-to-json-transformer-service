@@ -56,4 +56,13 @@ public class AuditController {
         model.addAttribute("entry", entry);
         return "auditDetail";
     }
+
+    @GetMapping(value = "/audit/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<AuditEntrySummary> search(@RequestParam("q") String query) {
+        logger.info("Audit search for '{}'", query);
+        return service.search(query).stream()
+                .map(AuditEntrySummary::new)
+                .toList();
+    }
 }
