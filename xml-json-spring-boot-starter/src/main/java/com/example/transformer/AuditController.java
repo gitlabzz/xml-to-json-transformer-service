@@ -7,6 +7,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,15 @@ public class AuditController {
         model.addAttribute("page", page);
         model.addAttribute("pageSize", props.getPageSize());
         return "auditList";
+    }
+
+    @GetMapping(value = "/audit/api", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<AuditEntrySummary> listApi(@RequestParam(name = "page", defaultValue = "0") int page) {
+        logger.debug("Audit API list requested - page {}", page);
+        return service.page(page, props.getPageSize()).stream()
+                .map(AuditEntrySummary::new)
+                .toList();
     }
 
     @GetMapping(value = "/audit/{id}", produces = MediaType.TEXT_HTML_VALUE)
