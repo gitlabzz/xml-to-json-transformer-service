@@ -18,31 +18,37 @@
     <!-- =========================================================
          APPENDERS
     ========================================================== -->
-    <!-- Console: pretty colours when running under IDEA or kubectl logs -->
-    <Appender type="Console" name="Console">
-        <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1.} [%t] %m%n"/>
-    </Appender>
+    <Appenders>
+        <!-- Console: pretty colours when running under IDEA or kubectl logs -->
+        <Console name="Console">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1.} [%t] %m%n"/>
+        </Console>
 
-    <!-- Rolling file: 100 MB chunks, one folder per day, 30 days retention -->
-    <Appender type="RollingFile" name="RollingFile"
-              fileName="${LOG_DIR}/${LOG_FILE_BASENAME}.log"
-              filePattern="${LOG_DIR}/%d{yyyy-MM-dd}/${LOG_FILE_BASENAME}-%i.log.gz">
+        <!-- Rolling file: 100 MB chunks, one folder per day, 30 days retention -->
+        <RollingFile name="RollingFile"
+                     fileName="${LOG_DIR}/${LOG_FILE_BASENAME}.log"
+                     filePattern="${LOG_DIR}/%d{yyyy-MM-dd}/${LOG_FILE_BASENAME}-%i.log.gz">
 
-        <PatternLayout>
-            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %c{1.} [%t] %m%n</pattern>
-        </PatternLayout>
+            <PatternLayout>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %c{1.} [%t] %m%n</pattern>
+            </PatternLayout>
 
-        <Policies>
-            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-            <SizeBasedTriggeringPolicy size="100 MB"/>
-        </Policies>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
 
-        <DefaultRolloverStrategy max="30"/>
-    </Appender>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
 
-    <!-- OPTIONAL: Async wrapper to remove IO cost from business threads -->
-    <AppenderRef name="AsyncConsole" ref="Console" type="Async"/>
-    <AppenderRef name="AsyncFile" ref="RollingFile" type="Async"/>
+        <!-- OPTIONAL: Async wrapper to remove IO cost from business threads -->
+        <Async name="AsyncConsole">
+            <AppenderRef ref="Console"/>
+        </Async>
+        <Async name="AsyncFile">
+            <AppenderRef ref="RollingFile"/>
+        </Async>
+    </Appenders>
 
     <!-- OPTIONAL: JDBC appender template (disabled by default) -->
     <!--
