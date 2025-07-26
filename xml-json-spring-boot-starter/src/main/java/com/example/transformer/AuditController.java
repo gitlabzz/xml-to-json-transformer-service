@@ -28,9 +28,11 @@ public class AuditController {
     @GetMapping(value = "/audit", produces = MediaType.TEXT_HTML_VALUE)
     public String list(@RequestParam(name = "page", defaultValue = "0") int page, Model model) {
         logger.info("Audit list requested - page {}", page);
-        model.addAttribute("entries", service.page(page, props.getPageSize()));
+        int pageSize = props.getPageSize();
+        model.addAttribute("entries", service.page(page, pageSize));
         model.addAttribute("page", page);
-        model.addAttribute("pageSize", props.getPageSize());
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("totalPages", (service.count() + pageSize - 1) / pageSize);
         return "auditList";
     }
 

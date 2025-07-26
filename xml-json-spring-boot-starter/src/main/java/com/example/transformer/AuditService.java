@@ -59,6 +59,10 @@ public class AuditService {
         return null;
     }
 
+    public int count() {
+        return history.size();
+    }
+
     /**
      * Clears all stored audit entries. Used in tests.
      */
