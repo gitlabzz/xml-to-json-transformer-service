@@ -29,6 +29,12 @@ public class JpaAuditEntry {
     @Column(name = "json_key")
     private String jsonKey;
 
+    @Column(name = "json_text_excerpt")
+    private String jsonTextExcerpt;
+
+    @Column(name = "xml_text_excerpt")
+    private String xmlTextExcerpt;
+
     private boolean compressed;
 
     public JpaAuditEntry() {
@@ -112,6 +118,22 @@ public class JpaAuditEntry {
 
     public void setJsonKey(String jsonKey) {
         this.jsonKey = jsonKey;
+    }
+
+    public String getJsonTextExcerpt() {
+        return jsonTextExcerpt;
+    }
+
+    public void setJsonTextExcerpt(String jsonTextExcerpt) {
+        this.jsonTextExcerpt = jsonTextExcerpt;
+    }
+
+    public String getXmlTextExcerpt() {
+        return xmlTextExcerpt;
+    }
+
+    public void setXmlTextExcerpt(String xmlTextExcerpt) {
+        this.xmlTextExcerpt = xmlTextExcerpt;
     }
 
     public boolean isCompressed() {

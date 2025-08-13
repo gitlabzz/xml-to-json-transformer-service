@@ -45,8 +45,8 @@ public class AuditService {
         return store.count();
     }
 
-    public List<AuditEntry> search(String text) {
-        return store.search(text);
+    public PageResult<AuditEntry> search(String text, int page, int size) {
+        return store.search(text, page, size);
     }
 
     public String xmlUrl(long id) {

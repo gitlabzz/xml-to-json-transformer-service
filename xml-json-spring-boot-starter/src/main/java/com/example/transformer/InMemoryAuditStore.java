@@ -41,11 +41,14 @@ public class InMemoryAuditStore implements AuditStore {
     }
 
     @Override
-    public List<AuditEntry> search(String text) {
+    public PageResult<AuditEntry> search(String text, int page, int size) {
         String lower = text.toLowerCase();
-        return history.stream()
+        List<AuditEntry> matches = history.stream()
                 .filter(e -> containsIgnoreCase(e, lower))
                 .collect(Collectors.toCollection(ArrayList::new));
+        int from = Math.min(page * size, matches.size());
+        int to = Math.min(from + size, matches.size());
+        return new PageResult<>(matches.subList(from, to), page, size, matches.size());
     }
 
     @Override

@@ -52,6 +52,12 @@ public class S3AuditStore implements AuditStore {
         j.setSuccess(e.isSuccess());
         j.setDurationMs(e.getDurationMs());
         j.setCompressed(true);
+        try {
+            j.setXmlTextExcerpt(takeExcerpt(e.getXml(), 2048));
+            j.setJsonTextExcerpt(takeExcerpt(e.getJson(), 2048));
+        } catch (IOException ex) {
+            // ignore excerpt on error
+        }
         repo.save(j);
         long id = j.getId();
         String base = prefix + "/" + id;
@@ -90,8 +96,16 @@ public class S3AuditStore implements AuditStore {
     }
 
     @Override
-    public List<AuditEntry> search(String q) {
-        return page(0, 50);
+    public PageResult<AuditEntry> search(String q, int page, int size) {
+        var p = repo.search(q, PageRequest.of(page, size))
+                .map(j -> new AuditEntry(j.getId(), j.getClientIp(), j.getRequestTime(), j.getResponseTime(),
+                        j.isSuccess(), j.getDurationMs(), new byte[0], new byte[0], false));
+        return new PageResult<>(p.getContent(), page, size, p.getTotalElements());
+    }
+
+    private static String takeExcerpt(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     @Override

@@ -73,6 +73,8 @@ audit.s3-endpoint=http://minio:9000
 
 With `audit.backend=s3`, payload bytes are stored in the specified bucket under the given prefix while metadata remains in the database. The UI fetches XML and JSON bodies through short-lived links exposed at `/audit/{id}/xmlUrl` and `/audit/{id}/jsonUrl`.
 
+Audit entries can be searched via `/v1/audit/search?q=TERM&page=0&size=20`, which returns a paginated JSON result and powers the HTML search page.
+
 Environment specific variants of `application.yml` can be placed alongside the default file
 using the naming convention `application-{profile}.yml` (e.g. `application-dev.yml`). The active
 profile is selected via the standard Spring Boot `spring.profiles.active` property.

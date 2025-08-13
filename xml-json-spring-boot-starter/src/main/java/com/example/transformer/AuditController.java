@@ -7,7 +7,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,13 +56,16 @@ public class AuditController {
         return "auditDetail";
     }
 
-    @GetMapping(value = "/audit/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public List<AuditEntrySummary> search(@RequestParam("q") String query) {
-        logger.info("Audit search for '{}'", query);
-        return service.search(query).stream()
-                .map(AuditEntrySummary::new)
-                .toList();
+    @GetMapping(value = "/audit/search", produces = MediaType.TEXT_HTML_VALUE)
+    public String searchPage(@RequestParam(name = "q", required = false, defaultValue = "") String query,
+                             @RequestParam(name = "page", defaultValue = "0") int page,
+                             Model model) {
+        logger.info("Audit search page for '{}' page {}", query, page);
+        int pageSize = props.getPageSize();
+        model.addAttribute("query", query);
+        model.addAttribute("page", page);
+        model.addAttribute("pageSize", pageSize);
+        return "auditSearch";
     }
 
     @GetMapping(value = "/audit/{id}/xmlUrl")

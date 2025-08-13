@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audit Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">XML to JSON Transformer</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/audit">Audit History</a></li>
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/swagger-ui/index.html">Swagger UI</a></li>
+                <li class="nav-item"><a class="nav-link" href="/v3/api-docs">OpenAPI Spec</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div id="app" class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/audit">Audit History</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Search</li>
+        </ol>
+    </nav>
+    <h2>Search Audit Entries</h2>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" v-model="query" @keyup.enter="performSearch" placeholder="Search...">
+        <button class="btn btn-primary" @click="performSearch">Search</button>
+    </div>
+    <table class="table table-striped" v-if="entries.length">
+        <thead class="table-dark">
+        <tr><th>ID</th><th>Client IP</th><th>Request Time</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+        <tr v-for="e in entries" :key="e.id">
+            <td><a :href="'/audit/' + e.id">{{ e.id }}</a></td>
+            <td>{{ e.clientIp }}</td>
+            <td>{{ formatTime(e.requestTime) }}</td>
+            <td><span :class="['badge', e.success ? 'bg-success' : 'bg-danger']">{{ e.success ? 'Success' : 'Failed' }}</span></td>
+        </tr>
+        </tbody>
+    </table>
+    <p v-else class="text-muted">No results</p>
+    <nav aria-label="Page navigation" class="mt-4" v-if="totalPages > 1">
+        <ul class="pagination">
+            <li class="page-item" :class="{disabled: page === 0}">
+                <a class="page-link" href="#" @click.prevent="prev">&laquo;</a>
+            </li>
+            <li class="page-item" v-for="i in totalPages" :key="i" :class="{active: i-1 === page}">
+                <a class="page-link" href="#" @click.prevent="goto(i-1)">{{ i }}</a>
+            </li>
+            <li class="page-item" :class="{disabled: page >= totalPages - 1}">
+                <a class="page-link" href="#" @click.prevent="next">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    const app = Vue.createApp({
+        data() {
+            return {
+                query: '[[${query}]]',
+                page: [[${page}]],
+                pageSize: [[${pageSize}]],
+                entries: [],
+                totalPages: 0
+            };
+        },
+        methods: {
+            formatTime(ts) {
+                const d = new Date(ts);
+                return d.toISOString().replace('T', ' ').substring(0, 19);
+            },
+            async load() {
+                const resp = await fetch(`/v1/audit/search?q=${encodeURIComponent(this.query)}&page=${this.page}&size=${this.pageSize}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.entries = data.items;
+                    this.page = data.page;
+                    this.pageSize = data.size;
+                    this.totalPages = Math.ceil(data.total / data.size);
+                } else {
+                    this.entries = [];
+                    this.totalPages = 0;
+                }
+            },
+            async performSearch() {
+                this.page = 0;
+                await this.load();
+            },
+            async prev() {
+                if (this.page > 0) {
+                    this.page--;
+                    await this.load();
+                }
+            },
+            async next() {
+                if (this.page < this.totalPages - 1) {
+                    this.page++;
+                    await this.load();
+                }
+            },
+            async goto(p) {
+                this.page = p;
+                await this.load();
+            }
+        },
+        mounted() {
+            this.load();
+        }
+    });
+    app.mount('#app');
+</script>
+</body>
+</html>
