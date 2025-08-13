@@ -11,12 +11,22 @@ spec:
     metadata:
       labels: { app: xml-json }
     spec:
+      volumes:
+        - name: app-config
+          configMap:
+            name: xml-json-config
       containers:
         - name: app
           image: myorg/xml-json:latest
           imagePullPolicy: IfNotPresent
           ports: [{containerPort: 8080}]
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
           env:
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/config/"
             - name: AUDIT_BACKEND
               value: "jdbc"
             - name: SPRING_DATASOURCE_URL

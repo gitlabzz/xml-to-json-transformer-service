@@ -1,0 +1,7 @@
+audit:
+  enabled: true
+  backend: jdbc
+  history-size: 500
+mapping:
+  pretty-print: true
+  escape-non-ascii: false

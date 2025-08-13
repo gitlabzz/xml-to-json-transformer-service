@@ -49,7 +49,10 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC" \
     SERVER_PORT=8080 \
     AUDIT_BACKEND=memory \
     AUDIT_HISTORY_SIZE=100 \
-    AUDIT_FILE_PATH=/data/audit-store.json
+    AUDIT_FILE_PATH=/data/audit-store.json \
+    AUDIT_ENABLED=true \
+    MAPPING_PRETTY_PRINT=false \
+    MAPPING_ESCAPE_NON_ASCII=false
 
 # Optional: provide structured config via SPRING_APPLICATION_JSON
 # ENV SPRING_APPLICATION_JSON='{"audit":{"backend":"memory","historySize":100}}'

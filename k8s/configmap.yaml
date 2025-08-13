@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xml-json-config
+data:
+  application.yml: |
+    audit:
+      enabled: true
+      backend: jdbc
+      history-size: 300
+    mapping:
+      pretty-print: false
+      escape-non-ascii: true

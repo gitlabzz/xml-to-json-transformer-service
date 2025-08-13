@@ -30,6 +30,9 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC" \
     SERVER_PORT=8080 \
     AUDIT_BACKEND=memory \
     AUDIT_HISTORY_SIZE=100 \
-    AUDIT_FILE_PATH=/data/audit-store.json
+    AUDIT_FILE_PATH=/data/audit-store.json \
+    AUDIT_ENABLED=true \
+    MAPPING_PRETTY_PRINT=false \
+    MAPPING_ESCAPE_NON_ASCII=false
 VOLUME ["/data"]
 ENTRYPOINT ["java","-jar","/app/target/xml-json-spring-boot-starter-0.0.1-SNAPSHOT.jar"]

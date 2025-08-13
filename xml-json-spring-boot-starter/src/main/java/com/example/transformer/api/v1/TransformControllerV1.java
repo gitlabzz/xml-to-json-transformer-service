@@ -1,5 +1,6 @@
 package com.example.transformer.api.v1;
 
+import com.example.transformer.AuditProperties;
 import com.example.transformer.AuditService;
 import com.example.transformer.XmlToJsonStreamer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,9 +17,10 @@ import javax.xml.stream.XMLStreamException;
 public class TransformControllerV1 {
   private final XmlToJsonStreamer streamer;
   private final AuditService auditService;
+  private final AuditProperties auditProperties;
 
-  public TransformControllerV1(XmlToJsonStreamer streamer, AuditService auditService) {
-    this.streamer = streamer; this.auditService = auditService;
+  public TransformControllerV1(XmlToJsonStreamer streamer, AuditService auditService, AuditProperties auditProperties) {
+    this.streamer = streamer; this.auditService = auditService; this.auditProperties = auditProperties;
   }
 
   @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
@@ -48,7 +50,9 @@ public class TransformControllerV1 {
       try { in.close(); } catch (IOException ignore) {}
       try { out.close(); } catch (IOException ignore) {}
       long end = System.currentTimeMillis();
-      auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+      if (auditProperties.isEnabled()) {
+        auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+      }
     }
   }
 }

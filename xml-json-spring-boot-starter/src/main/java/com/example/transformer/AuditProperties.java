@@ -9,6 +9,7 @@ public class AuditProperties {
     private boolean compress = true;
     private String backend = "memory";
     private String filePath = "audit-store.ser";
+    private boolean enabled = true;
 
     public int getHistorySize() {
         return historySize;
@@ -48,5 +49,13 @@ public class AuditProperties {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

@@ -4,12 +4,17 @@ audit:
   compress: true
   backend: memory
   file-path: audit-store.ser
+  enabled: true
+
+mapping:
+  pretty-print: false
+  escape-non-ascii: false
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,env,metrics
+        include: health,info,env,metrics,refresh
   endpoint:
     health:
       probes:
@@ -24,3 +29,9 @@ server:
   tomcat:
     mbeanregistry:
       enabled: true
+
+spring:
+  application:
+    name: xml-json
+  config:
+    import: "optional:configserver:http://config-server:8888"

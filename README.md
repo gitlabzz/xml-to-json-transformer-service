@@ -77,3 +77,32 @@ It also shows the application version, build time and Git commit id extracted fr
 `build-info.properties` and `git.properties` at runtime. A sample `curl` command is
 provided for quickly testing the `/v1/transform` endpoint.
 
+### Feature Flags & Central Config
+
+Runtime behaviour is controlled through properties that can be served by Spring Cloud Config or mounted via a Kubernetes `ConfigMap`.
+
+Defaults are defined in `application.yml`:
+
+```
+audit.enabled=true
+mapping.pretty-print=false
+mapping.escape-non-ascii=false
+```
+
+To source settings from a Config Server add:
+
+```
+spring:
+  application:
+    name: xml-json
+  config:
+    import: "optional:configserver:http://config-server:8888"
+```
+
+Refresh properties without restarting:
+
+```
+curl -X POST http://localhost:8080/actuator/refresh
+```
+
+For Kubernetes deployments, a sample `ConfigMap` manifest is provided in `k8s/configmap.yaml` and mounted in `k8s/deployment.yaml`.

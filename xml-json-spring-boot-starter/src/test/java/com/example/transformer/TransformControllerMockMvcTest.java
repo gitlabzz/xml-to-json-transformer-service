@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.example.transformer.XmlToJsonStreamer;
 import com.example.transformer.AuditService;
+import com.example.transformer.AuditProperties;
+import org.junit.jupiter.api.BeforeEach;
 import javax.xml.stream.XMLStreamException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.mockito.Mockito.when;
 
 @WebMvcTest(controllers = TransformController.class)
 public class TransformControllerMockMvcTest {
@@ -29,6 +32,14 @@ public class TransformControllerMockMvcTest {
 
     @MockBean
     private AuditService auditService;
+
+    @MockBean
+    private AuditProperties auditProperties;
+
+    @BeforeEach
+    void setup() {
+        when(auditProperties.isEnabled()).thenReturn(true);
+    }
 
     @Test
     public void validXml() throws Exception {

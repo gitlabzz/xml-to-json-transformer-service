@@ -1,27 +1,25 @@
 package com.example.transformer;
 
 import com.example.transformer.api.v1.TransformControllerV1;
-import com.example.transformer.AuditProperties;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.xml.stream.XMLStreamException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = TransformControllerV1.class)
-public class TransformControllerV1MockMvcTest {
+public class TransformControllerV1AuditDisabledTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -37,25 +35,16 @@ public class TransformControllerV1MockMvcTest {
 
     @BeforeEach
     void setup() {
-        when(auditProperties.isEnabled()).thenReturn(true);
+        when(auditProperties.isEnabled()).thenReturn(false);
     }
 
     @Test
-    public void validXml() throws Exception {
+    void noAuditWhenDisabled() throws Exception {
         mockMvc.perform(post("/v1/transform")
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>") )
                 .andExpect(status().isOk());
-    }
 
-    @Test
-    public void malformedXml() throws Exception {
-        doThrow(new XMLStreamException("invalid"))
-                .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
-
-        mockMvc.perform(post("/v1/transform")
-                .contentType(MediaType.APPLICATION_XML)
-                .content("<a>") )
-                .andExpect(status().isBadRequest());
+        verify(auditService, never()).add(any(), anyLong(), anyLong(), anyBoolean(), any(), any());
     }
 }
