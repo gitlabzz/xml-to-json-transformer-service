@@ -4,3 +4,49 @@ audit:
   compress: true
   backend: memory
   file-path: audit-store.ser
+  enabled: true
+  s3-prefix: audits
+
+mapping:
+  pretty-print: false
+  escape-non-ascii: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,env,refresh
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db,ping
+        liveness:
+          include: ping
+  metrics:
+    tags:
+      application: xml-json
+  tracing:
+    sampling:
+      probability: 1.0
+
+server:
+  max-http-request-header-size: 32KB
+  tomcat:
+    max-swallow-size: 0
+    mbeanregistry:
+      enabled: true
+
+spring:
+  application:
+    name: xml-json
+  config:
+    import: "optional:configserver:http://config-server:8888"
+  mvc:
+    async:
+      request-timeout: 30s
+
+cors:
+  allowed-origins: "https://ui.myplatform.example"

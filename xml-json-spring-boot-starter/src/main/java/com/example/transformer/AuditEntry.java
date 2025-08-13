@@ -77,6 +77,18 @@ public class AuditEntry implements java.io.Serializable {
         return durationMs;
     }
 
+    public byte[] getXmlDataRaw() {
+        return xmlData;
+    }
+
+    public byte[] getJsonDataRaw() {
+        return jsonData;
+    }
+
+    public boolean isCompressed() {
+        return compressed;
+    }
+
 
     public String getXml() throws IOException {
         byte[] decompressed = decompress(xmlData);

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xml-json
+  labels: { app: xml-json }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: xml-json }
+  template:
+    metadata:
+      labels: { app: xml-json }
+    spec:
+      volumes:
+        - name: app-config
+          configMap:
+            name: xml-json-config
+        containers:
+          - name: app
+            image: myorg/xml-json:latest
+            imagePullPolicy: IfNotPresent
+            ports: [{containerPort: 8080}]
+            volumeMounts:
+              - name: app-config
+                mountPath: /config
+                readOnly: true
+            env:
+              - name: SPRING_CONFIG_IMPORT
+                value: "optional:file:/config/"
+              - name: AUDIT_BACKEND
+                value: "s3"
+              - name: SPRING_DATASOURCE_URL
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: url }
+              - name: SPRING_DATASOURCE_USERNAME
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: username }
+              - name: SPRING_DATASOURCE_PASSWORD
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: password }
+              - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                value: "http://otel-collector:4317"
+              - name: MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED
+                value: "true"
+              - name: AUDIT_S3_BUCKET
+                value: "xmljson"
+              - name: AUDIT_S3_REGION
+                value: "us-east-1"
+              - name: AUDIT_S3_ENDPOINT
+                value: "http://minio:9000"
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            periodSeconds: 5
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            periodSeconds: 10
+            initialDelaySeconds: 30
+            timeoutSeconds: 2
+          resources:
+            requests: { cpu: "200m", memory: "256Mi" }
+            limits:   { cpu: "1",    memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: xml-json
+spec:
+  selector: { app: xml-json }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

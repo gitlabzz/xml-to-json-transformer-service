@@ -15,7 +15,8 @@ public class AuditServiceConcurrencyTest {
         AuditProperties props = new AuditProperties();
         props.setHistorySize(1000);
         props.setCompress(false);
-        AuditService service = new AuditService(props);
+        AuditStore store = new InMemoryAuditStore(1000);
+        AuditService service = new AuditService(store, props);
 
         int threads = 10;
         int perThread = 100;

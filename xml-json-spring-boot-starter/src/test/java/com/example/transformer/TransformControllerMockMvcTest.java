@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.example.transformer.XmlToJsonStreamer;
 import com.example.transformer.AuditService;
+import com.example.transformer.AuditProperties;
+import org.junit.jupiter.api.BeforeEach;
 import javax.xml.stream.XMLStreamException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +18,9 @@ import static org.mockito.ArgumentMatchers.any;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.mockito.Mockito.when;
 
 @WebMvcTest(controllers = TransformController.class)
 public class TransformControllerMockMvcTest {
@@ -29,12 +34,22 @@ public class TransformControllerMockMvcTest {
     @MockBean
     private AuditService auditService;
 
+    @MockBean
+    private AuditProperties auditProperties;
+
+    @BeforeEach
+    void setup() {
+        when(auditProperties.isEnabled()).thenReturn(true);
+    }
+
     @Test
     public void validXml() throws Exception {
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().string("Deprecation", "true"))
+                .andExpect(header().string("Link", "</v1/transform>; rel=\"successor-version\""));
     }
 
     @Test
@@ -42,9 +57,11 @@ public class TransformControllerMockMvcTest {
         doThrow(new XMLStreamException("invalid"))
                 .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
 
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("Deprecation", "true"))
+                .andExpect(header().string("Link", "</v1/transform>; rel=\"successor-version\""));
     }
 }

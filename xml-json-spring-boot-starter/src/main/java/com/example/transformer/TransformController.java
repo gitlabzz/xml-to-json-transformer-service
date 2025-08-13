@@ -17,14 +17,17 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/transform")
+@Deprecated
 public class TransformController {
 
     private final XmlToJsonStreamer streamer;
     private final AuditService auditService;
+    private final AuditProperties auditProperties;
 
-    public TransformController(XmlToJsonStreamer streamer, AuditService auditService) {
+    public TransformController(XmlToJsonStreamer streamer, AuditService auditService, AuditProperties auditProperties) {
         this.streamer = streamer;
         this.auditService = auditService;
+        this.auditProperties = auditProperties;
     }
 
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
@@ -33,6 +36,8 @@ public class TransformController {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
+        response.setHeader("Deprecation", "true");
+        response.setHeader("Link", "</v1/transform>; rel=\"successor-version\"");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         ByteArrayOutputStream xmlBuf = new ByteArrayOutputStream();
@@ -54,7 +59,9 @@ public class TransformController {
             try { in.close(); } catch (IOException ignore) {}
             try { out.close(); } catch (IOException ignore) {}
             long end = System.currentTimeMillis();
-            auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+            if (auditProperties.isEnabled()) {
+                auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+            }
         }
     }
 

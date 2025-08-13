@@ -1,27 +1,22 @@
 package com.example.transformer;
 
-import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Service
 public class AuditService {
     private static final Logger logger = LoggerFactory.getLogger(AuditService.class);
-    private final Deque<AuditEntry> history = new ConcurrentLinkedDeque<>();
-    private final int maxHistory;
+    private final AuditStore store;
     private final boolean compress;
     private final AtomicLong counter = new AtomicLong();
 
-    public AuditService(AuditProperties props) {
-        this.maxHistory = props.getHistorySize();
+    public AuditService(AuditStore store, AuditProperties props) {
+        this.store = store;
         this.compress = props.isCompress();
     }
 
@@ -29,14 +24,9 @@ public class AuditService {
         try {
             byte[] x = compress ? AuditEntry.compress(xml) : xml;
             byte[] j = compress ? AuditEntry.compress(json) : json;
-            AuditEntry entry = new AuditEntry(counter.incrementAndGet(), clientIp, start, end,
-                    success, end - start, x, j, compress);
-            synchronized (history) {
-                if (history.size() >= maxHistory) {
-                    history.removeFirst();
-                }
-                history.addLast(entry);
-            }
+            long id = counter.incrementAndGet();
+            AuditEntry entry = new AuditEntry(id, clientIp, start, end, success, end - start, x, j, compress);
+            store.save(entry);
             logger.info("Audit entry {} stored for {} - success: {}", entry.getId(), clientIp, success);
         } catch (IOException e) {
             logger.error("Failed to store audit entry for {}", clientIp, e);
@@ -44,51 +34,30 @@ public class AuditService {
     }
 
     public List<AuditEntry> page(int page, int size) {
-        return history.stream()
-                .skip((long) page * size)
-                .limit(size)
-                .collect(Collectors.toCollection(ArrayList::new));
+        return store.page(page, size);
     }
 
     public AuditEntry get(long id) {
-        for (AuditEntry e : history) {
-            if (e.getId() == id) {
-                return e;
-            }
-        }
-        return null;
+        return store.get(id);
     }
 
     public int count() {
-        return history.size();
+        return store.count();
     }
 
-    /**
-     * Returns all audit entries whose XML or JSON payload contains the given text.
-     */
-    public List<AuditEntry> search(String text) {
-        String lower = text.toLowerCase();
-        return history.stream()
-                .filter(e -> containsIgnoreCase(e, lower))
-                .collect(Collectors.toCollection(ArrayList::new));
+    public PageResult<AuditEntry> search(String text, int page, int size) {
+        return store.search(text, page, size);
     }
 
-    private boolean containsIgnoreCase(AuditEntry e, String lower) {
-        try {
-            return e.getXml().toLowerCase().contains(lower)
-                    || e.getJson().toLowerCase().contains(lower);
-        } catch (IOException ex) {
-            return false;
-        }
+    public String xmlUrl(long id) {
+        return store.xmlUrl(id);
     }
 
-    /**
-     * Clears all stored audit entries. Used in tests.
-     */
+    public String jsonUrl(long id) {
+        return store.jsonUrl(id);
+    }
+
     public void clear() {
-        synchronized (history) {
-            history.clear();
-            counter.set(0);
-        }
+        counter.set(0);
     }
 }

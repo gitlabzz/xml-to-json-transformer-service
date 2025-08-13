@@ -42,7 +42,7 @@ public class LargeStreamTest {
 
         MemoryMXBean bean = ManagementFactory.getMemoryMXBean();
         MemoryUsage before = bean.getHeapMemoryUsage();
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/v1/transform")
                 .contentType(MediaType.APPLICATION_XML)
                 .content(xml))
                 .andReturn();

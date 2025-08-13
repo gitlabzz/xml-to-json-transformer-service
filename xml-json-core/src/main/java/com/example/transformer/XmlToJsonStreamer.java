@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
+import com.example.transformer.ByteArrayOutputStreamPool;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +29,7 @@ public class XmlToJsonStreamer {
     private final JsonFactory jsonFactory;
     private final XMLInputFactory xmlInputFactory;
     private final MappingConfig config;
+    private final ByteArrayOutputStreamPool bufferPool;
 
 
     public XmlToJsonStreamer(MappingConfig config) throws IOException {
@@ -36,7 +38,8 @@ public class XmlToJsonStreamer {
                 .configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8, true)
                 .build(),
              XMLInputFactory.newFactory(),
-             config);
+             config,
+             new ByteArrayOutputStreamPool());
     }
 
     public XmlToJsonStreamer() throws IOException {
@@ -46,9 +49,14 @@ public class XmlToJsonStreamer {
     public static Builder builder() { return new Builder(); }
 
     public XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlInputFactory, MappingConfig config) throws IOException {
+        this(jsonFactory, xmlInputFactory, config, new ByteArrayOutputStreamPool());
+    }
+
+    public XmlToJsonStreamer(JsonFactory jsonFactory, XMLInputFactory xmlInputFactory, MappingConfig config, ByteArrayOutputStreamPool pool) throws IOException {
         this.config = config;
         this.jsonFactory = jsonFactory;
         this.xmlInputFactory = xmlInputFactory;
+        this.bufferPool = pool;
 
         this.xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
         this.xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
@@ -59,10 +67,12 @@ public class XmlToJsonStreamer {
         private JsonFactory jsonFactory;
         private XMLInputFactory xmlInputFactory;
         private MappingConfig mappingConfig = new MappingConfig();
+        private ByteArrayOutputStreamPool bufferPool;
 
         public Builder jsonFactory(JsonFactory f) { this.jsonFactory = f; return this; }
         public Builder xmlInputFactory(XMLInputFactory f) { this.xmlInputFactory = f; return this; }
         public Builder mappingConfig(MappingConfig c) { this.mappingConfig = c; return this; }
+        public Builder bufferPool(ByteArrayOutputStreamPool p) { this.bufferPool = p; return this; }
         /**
          * Configure whether the resulting JSON should include the XML root element
          * as a wrapper object.
@@ -90,7 +100,10 @@ public class XmlToJsonStreamer {
             if (xmlInputFactory == null) {
                 xmlInputFactory = XMLInputFactory.newFactory();
             }
-            return new XmlToJsonStreamer(jsonFactory, xmlInputFactory, mappingConfig);
+            if (bufferPool == null) {
+                bufferPool = new ByteArrayOutputStreamPool();
+            }
+            return new XmlToJsonStreamer(jsonFactory, xmlInputFactory, mappingConfig, bufferPool);
         }
     }
 
@@ -173,7 +186,7 @@ public class XmlToJsonStreamer {
                 if (state == null) {
                     state = new ChildState();
                     state.count = 1;
-                    state.buffer = new ByteArrayOutputStream(64);
+                    state.buffer = bufferPool.borrow();
                     JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
                     tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
                     tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
@@ -188,13 +201,14 @@ public class XmlToJsonStreamer {
                             out.writeFieldName(childName);
                             out.writeStartArray();
                             out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                            bufferPool.release(state.buffer);
                             state.arrayStarted = true;
                             state.buffer = null;
                         }
                         readElement(reader, out);
                     } else {
-                        state.buffer.reset();
-                        JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
+                    state.buffer.reset();
+                    JsonGenerator tmp = jsonFactory.createGenerator(state.buffer);
                         tmp.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), config.isEscapeNonAscii());
                         tmp.configure(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8.mappedFeature(), true);
                         tmp.setPrettyPrinter(new CompactPrettyPrinter());
@@ -222,6 +236,7 @@ public class XmlToJsonStreamer {
             if (state.count == 1 || !config.isArraysForRepeatedSiblings()) {
                 out.writeFieldName(name);
                 out.writeRawValue(state.buffer.toString(StandardCharsets.UTF_8));
+                bufferPool.release(state.buffer);
             } else if (state.arrayStarted) {
                 out.writeEndArray();
             }
