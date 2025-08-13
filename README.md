@@ -18,7 +18,7 @@ Start the service (optional):
 mvn spring-boot:run
 ```
 
-POST XML to `/transform` and receive the mapped JSON. The controller streams the request and response bodies so large documents do not overwhelm memory.
+POST XML to `/v1/transform` and receive the mapped JSON. The controller streams the request and response bodies so large documents do not overwhelm memory. The legacy `/transform` endpoint remains available but is deprecated.
 
 ## Mapping Rules
 
@@ -75,5 +75,5 @@ profile is selected via the standard Spring Boot `spring.profiles.active` proper
 The root URL `/` displays links to the audit table and generated OpenAPI documentation.
 It also shows the application version, build time and Git commit id extracted from
 `build-info.properties` and `git.properties` at runtime. A sample `curl` command is
-provided for quickly testing the `/transform` endpoint.
+provided for quickly testing the `/v1/transform` endpoint.
 

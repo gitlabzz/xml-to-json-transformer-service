@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/transform")
+@Deprecated
 public class TransformController {
 
     private final XmlToJsonStreamer streamer;
@@ -33,6 +34,8 @@ public class TransformController {
         long start = System.currentTimeMillis();
         String clientIp = request.getRemoteAddr();
 
+        response.setHeader("Deprecation", "true");
+        response.setHeader("Link", "</v1/transform>; rel=\"successor-version\"");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         ByteArrayOutputStream xmlBuf = new ByteArrayOutputStream();

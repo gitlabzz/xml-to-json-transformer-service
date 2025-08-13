@@ -1,25 +1,24 @@
 package com.example.transformer;
 
+import com.example.transformer.api.v1.TransformControllerV1;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import com.example.transformer.XmlToJsonStreamer;
-import com.example.transformer.AuditService;
+
 import javax.xml.stream.XMLStreamException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.ArgumentMatchers.any;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
-@WebMvcTest(controllers = TransformController.class)
-public class TransformControllerMockMvcTest {
+@WebMvcTest(controllers = TransformControllerV1.class)
+public class TransformControllerV1MockMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,12 +31,10 @@ public class TransformControllerMockMvcTest {
 
     @Test
     public void validXml() throws Exception {
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/v1/transform")
                 .contentType(MediaType.APPLICATION_XML)
-                .content("<a/>"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Deprecation", "true"))
-                .andExpect(header().string("Link", "</v1/transform>; rel=\"successor-version\""));
+                .content("<a/>") )
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -45,11 +42,9 @@ public class TransformControllerMockMvcTest {
         doThrow(new XMLStreamException("invalid"))
                 .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
 
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/v1/transform")
                 .contentType(MediaType.APPLICATION_XML)
-                .content("<a>"))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string("Deprecation", "true"))
-                .andExpect(header().string("Link", "</v1/transform>; rel=\"successor-version\""));
+                .content("<a>") )
+                .andExpect(status().isBadRequest());
     }
 }
