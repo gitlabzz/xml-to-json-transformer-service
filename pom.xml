@@ -10,6 +10,7 @@
     <modules>
         <module>xml-json-core</module>
         <module>xml-json-spring-boot-starter</module>
+        <module>benchmarks</module>
     </modules>
 
     <properties>
