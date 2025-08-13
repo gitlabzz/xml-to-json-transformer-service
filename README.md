@@ -133,3 +133,22 @@ The service acts as an OAuth2 resource server and requires a valid JWT for `/v1/
 * Only `application/xml` or `text/xml` content types are accepted and payloads larger than 10&nbsp;MiB are rejected.
 * Each client is rate limited to 60 requests per minute.
 * CORS origins can be restricted via the `cors.allowed-origins` property.
+
+### Error Handling & Idempotency
+
+Errors follow the [RFC&nbsp;7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format and include the active trace id:
+
+```
+HTTP/1.1 415 Unsupported Media Type
+Content-Type: application/problem+json
+
+{
+  "type":"about:blank",
+  "title":"Unsupported Media Type",
+  "status":415,
+  "detail":"Unsupported Media Type",
+  "traceId":"..."
+}
+```
+
+Clients may supply an `Idempotency-Key` header when POSTing to `/v1/transform`. Subsequent requests with the same key will receive `409 Conflict` to prevent duplicate processing.

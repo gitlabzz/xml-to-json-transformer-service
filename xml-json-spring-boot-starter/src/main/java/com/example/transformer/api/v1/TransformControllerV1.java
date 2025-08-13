@@ -4,13 +4,13 @@ import com.example.transformer.AuditProperties;
 import com.example.transformer.AuditService;
 import com.example.transformer.TransformMetrics;
 import com.example.transformer.XmlToJsonStreamer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import javax.xml.stream.XMLStreamException;
 
 @RestController
@@ -45,10 +45,16 @@ public class TransformControllerV1 {
     };
 
     boolean success=false;
-      try { streamer.transform(in, out); success=true; }
-      catch (XMLStreamException e) {
-      response.reset(); response.setStatus(400); response.setContentType(MediaType.TEXT_PLAIN_VALUE);
-      response.getOutputStream().write((e.getMessage()==null?"":e.getMessage()).getBytes(StandardCharsets.UTF_8));
+    try {
+      streamer.transform(in, out);
+      success=true;
+    } catch (XMLStreamException e) {
+      var mapper = new ObjectMapper();
+      var problem = new com.example.transformer.ProblemHandler.Problem("about:blank", "Bad Request", 400, e.getMessage(), io.opentelemetry.api.trace.Span.current().getSpanContext().getTraceId());
+      response.reset();
+      response.setStatus(400);
+      response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+      response.getOutputStream().write(mapper.writeValueAsBytes(problem));
     } finally {
       try { in.close(); } catch (IOException ignore) {}
       try { out.close(); } catch (IOException ignore) {}

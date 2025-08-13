@@ -77,6 +77,8 @@ public class TransformControllerV1MockMvcTest {
         mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>") )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.title").value("Bad Request"));
     }
 }

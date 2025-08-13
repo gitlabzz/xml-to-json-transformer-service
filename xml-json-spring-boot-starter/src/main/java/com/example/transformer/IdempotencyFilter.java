@@ -10,29 +10,30 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class RateLimitFilter extends OncePerRequestFilter {
+public class IdempotencyFilter extends OncePerRequestFilter {
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private final Map<String, io.github.bucket4j.Bucket> buckets = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Boolean> seen = new ConcurrentHashMap<>();
 
   @Override
-  protected void doFilterInternal(HttpServletRequest r, HttpServletResponse w, FilterChain c) throws ServletException, IOException {
-    String key = Optional.ofNullable(r.getHeader("X-API-Key")).orElse(r.getRemoteAddr());
-    var conf = io.github.bucket4j.Bandwidth.classic(60, io.github.bucket4j.Refill.greedy(60, java.time.Duration.ofMinutes(1)));
-    var bucket = buckets.computeIfAbsent(key, k -> io.github.bucket4j.Bucket4j.builder().addLimit(conf).build());
-    if (bucket.tryConsume(1)) {
-      c.doFilter(r, w);
-    } else {
-      problem(w, 429, "Too Many Requests", "Rate limit exceeded");
+  protected void doFilterInternal(HttpServletRequest r, HttpServletResponse w, FilterChain c)
+      throws ServletException, IOException {
+    if ("POST".equalsIgnoreCase(r.getMethod()) && r.getRequestURI().startsWith("/v1/transform")) {
+      String key = r.getHeader("Idempotency-Key");
+      if (key != null && !key.isBlank()) {
+        if (seen.putIfAbsent(key, Boolean.TRUE) != null) {
+          problem(w, 409, "Conflict", "Duplicate Idempotency-Key");
+          return;
+        }
+      }
     }
+    c.doFilter(r, w);
   }
 
   private void problem(HttpServletResponse w, int status, String title, String detail) throws IOException {
-    String traceId = Span.current().getSpanContext().getTraceId();
+    var traceId = Span.current().getSpanContext().getTraceId();
     var body = MAPPER.writeValueAsString(new Problem("about:blank", title, status, detail, traceId));
     w.setStatus(status);
     w.setContentType("application/problem+json");
