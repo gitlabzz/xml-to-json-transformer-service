@@ -15,29 +15,33 @@ spec:
         - name: app-config
           configMap:
             name: xml-json-config
-      containers:
-        - name: app
-          image: myorg/xml-json:latest
-          imagePullPolicy: IfNotPresent
-          ports: [{containerPort: 8080}]
-          volumeMounts:
-            - name: app-config
-              mountPath: /config
-              readOnly: true
-          env:
-            - name: SPRING_CONFIG_IMPORT
-              value: "optional:file:/config/"
-            - name: AUDIT_BACKEND
-              value: "jdbc"
-            - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                secretKeyRef: { name: xml-json-db, key: url }
-            - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef: { name: xml-json-db, key: username }
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef: { name: xml-json-db, key: password }
+        containers:
+          - name: app
+            image: myorg/xml-json:latest
+            imagePullPolicy: IfNotPresent
+            ports: [{containerPort: 8080}]
+            volumeMounts:
+              - name: app-config
+                mountPath: /config
+                readOnly: true
+            env:
+              - name: SPRING_CONFIG_IMPORT
+                value: "optional:file:/config/"
+              - name: AUDIT_BACKEND
+                value: "jdbc"
+              - name: SPRING_DATASOURCE_URL
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: url }
+              - name: SPRING_DATASOURCE_USERNAME
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: username }
+              - name: SPRING_DATASOURCE_PASSWORD
+                valueFrom:
+                  secretKeyRef: { name: xml-json-db, key: password }
+              - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                value: "http://otel-collector:4317"
+              - name: MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED
+                value: "true"
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: 8080 }
             periodSeconds: 5

@@ -106,3 +106,13 @@ curl -X POST http://localhost:8080/actuator/refresh
 ```
 
 For Kubernetes deployments, a sample `ConfigMap` manifest is provided in `k8s/configmap.yaml` and mounted in `k8s/deployment.yaml`.
+
+### Observability
+
+The service exposes Prometheus metrics, OpenTelemetry traces and structured JSON logs.
+
+* `/actuator/prometheus` publishes Micrometer metrics such as `transform_duration_seconds`.
+* Each response includes an `X-Request-ID` correlation identifier and the active trace id via `X-Trace-Id`.
+* Logs are emitted in JSON with correlation and trace information suitable for Loki or ELK.
+
+Set the OTLP endpoint with `OTEL_EXPORTER_OTLP_ENDPOINT` and enable Prometheus scraping by setting `MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true`.

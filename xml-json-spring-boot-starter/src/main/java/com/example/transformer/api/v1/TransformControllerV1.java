@@ -2,6 +2,7 @@ package com.example.transformer.api.v1;
 
 import com.example.transformer.AuditProperties;
 import com.example.transformer.AuditService;
+import com.example.transformer.TransformMetrics;
 import com.example.transformer.XmlToJsonStreamer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,15 +19,17 @@ public class TransformControllerV1 {
   private final XmlToJsonStreamer streamer;
   private final AuditService auditService;
   private final AuditProperties auditProperties;
+  private final TransformMetrics metrics;
 
-  public TransformControllerV1(XmlToJsonStreamer streamer, AuditService auditService, AuditProperties auditProperties) {
-    this.streamer = streamer; this.auditService = auditService; this.auditProperties = auditProperties;
+  public TransformControllerV1(XmlToJsonStreamer streamer, AuditService auditService, AuditProperties auditProperties, TransformMetrics metrics) {
+    this.streamer = streamer; this.auditService = auditService; this.auditProperties = auditProperties; this.metrics = metrics;
   }
 
   @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE},
                produces = MediaType.APPLICATION_JSON_VALUE)
   public void transform(HttpServletRequest request, HttpServletResponse response) throws IOException {
     long start = System.currentTimeMillis();
+    var sample = metrics.start();
     String clientIp = request.getRemoteAddr();
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
@@ -42,17 +45,20 @@ public class TransformControllerV1 {
     };
 
     boolean success=false;
-    try { streamer.transform(in, out); success=true; }
-    catch (XMLStreamException e) {
+      try { streamer.transform(in, out); success=true; }
+      catch (XMLStreamException e) {
       response.reset(); response.setStatus(400); response.setContentType(MediaType.TEXT_PLAIN_VALUE);
       response.getOutputStream().write((e.getMessage()==null?"":e.getMessage()).getBytes(StandardCharsets.UTF_8));
     } finally {
       try { in.close(); } catch (IOException ignore) {}
       try { out.close(); } catch (IOException ignore) {}
       long end = System.currentTimeMillis();
-      if (auditProperties.isEnabled()) {
-        auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
-      }
+        metrics.record(sample);
+        metrics.recordIn(xmlBuf.size());
+        metrics.recordOut(jsonBuf.size());
+        if (auditProperties.isEnabled()) {
+          auditService.add(clientIp, start, end, success, xmlBuf.toByteArray(), jsonBuf.toByteArray());
+        }
     }
   }
 }

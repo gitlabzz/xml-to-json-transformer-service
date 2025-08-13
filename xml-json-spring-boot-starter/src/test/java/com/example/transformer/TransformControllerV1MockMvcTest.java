@@ -7,20 +7,25 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.hamcrest.Matchers;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = TransformControllerV1.class)
+@Import(CorrelationFilter.class)
 public class TransformControllerV1MockMvcTest {
 
     @Autowired
@@ -35,9 +40,13 @@ public class TransformControllerV1MockMvcTest {
     @MockBean
     private AuditProperties auditProperties;
 
+    @MockBean
+    private TransformMetrics metrics;
+
     @BeforeEach
     void setup() {
         when(auditProperties.isEnabled()).thenReturn(true);
+        when(metrics.start()).thenReturn(Timer.start(new SimpleMeterRegistry()));
     }
 
     @Test
@@ -46,6 +55,17 @@ public class TransformControllerV1MockMvcTest {
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>") )
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void headersPresent() throws Exception {
+        mockMvc.perform(post("/v1/transform")
+                .contentType(MediaType.APPLICATION_XML)
+                .content("<a/>")
+                .header(CorrelationFilter.CORRELATION, "abc"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(CorrelationFilter.CORRELATION, "abc"))
+                .andExpect(header().string("X-Trace-Id", Matchers.not(Matchers.isEmptyString())));
     }
 
     @Test

@@ -14,7 +14,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,env,metrics,refresh
+        include: health,info,prometheus,metrics,env,refresh
   endpoint:
     health:
       probes:
@@ -24,6 +24,12 @@ management:
           include: db,ping
         liveness:
           include: ping
+  metrics:
+    tags:
+      application: xml-json
+  tracing:
+    sampling:
+      probability: 1.0
 
 server:
   tomcat:

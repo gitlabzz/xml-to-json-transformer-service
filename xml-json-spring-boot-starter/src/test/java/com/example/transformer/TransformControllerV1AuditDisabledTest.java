@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @WebMvcTest(controllers = TransformControllerV1.class)
 public class TransformControllerV1AuditDisabledTest {
@@ -33,9 +35,13 @@ public class TransformControllerV1AuditDisabledTest {
     @MockBean
     private AuditProperties auditProperties;
 
+    @MockBean
+    private TransformMetrics metrics;
+
     @BeforeEach
     void setup() {
         when(auditProperties.isEnabled()).thenReturn(false);
+        when(metrics.start()).thenReturn(Timer.start(new SimpleMeterRegistry()));
     }
 
     @Test
