@@ -65,4 +65,18 @@ public class AuditController {
                 .map(AuditEntrySummary::new)
                 .toList();
     }
+
+    @GetMapping(value = "/audit/{id}/xmlUrl")
+    @ResponseBody
+    public ResponseEntity<String> xmlUrl(@PathVariable("id") long id) {
+        String url = service.xmlUrl(id);
+        return url != null ? ResponseEntity.ok(url) : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping(value = "/audit/{id}/jsonUrl")
+    @ResponseBody
+    public ResponseEntity<String> jsonUrl(@PathVariable("id") long id) {
+        String url = service.jsonUrl(id);
+        return url != null ? ResponseEntity.ok(url) : ResponseEntity.notFound().build();
+    }
 }

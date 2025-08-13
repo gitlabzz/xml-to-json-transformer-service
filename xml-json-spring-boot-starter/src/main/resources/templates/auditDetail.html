@@ -56,7 +56,7 @@
                 </div>
                 <div class="collapse" id="xmlCollapse">
                     <div class="card-body bg-light">
-                        <pre class="pretty-print mb-0"><code><span th:text="${entry.xml}"></span></code></pre>
+                        <pre class="pretty-print mb-0"><code id="xmlContent"><span th:text="${entry.xml}"></span></code></pre>
                     </div>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                 </div>
                 <div class="collapse" id="jsonCollapse">
                     <div class="card-body bg-light">
-                        <pre class="pretty-print mb-0"><code><span th:text="${entry.json}"></span></code></pre>
+                        <pre class="pretty-print mb-0"><code id="jsonContent"><span th:text="${entry.json}"></span></code></pre>
                     </div>
                 </div>
             </div>
@@ -101,9 +101,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
+<script th:inline="javascript">
     const app = Vue.createApp({});
     app.mount('#app');
+    const id = [[${entry.id}]];
+    fetch(`/audit/${id}/xmlUrl`).then(r => r.ok ? r.text() : null).then(u => {
+        if (u) {
+            fetch(u).then(r => r.text()).then(t => document.getElementById('xmlContent').textContent = t);
+        }
+    });
+    fetch(`/audit/${id}/jsonUrl`).then(r => r.ok ? r.text() : null).then(u => {
+        if (u) {
+            fetch(u).then(r => r.text()).then(t => document.getElementById('jsonContent').textContent = t);
+        }
+    });
 </script>
 </div>
 

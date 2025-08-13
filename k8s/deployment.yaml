@@ -28,7 +28,7 @@ spec:
               - name: SPRING_CONFIG_IMPORT
                 value: "optional:file:/config/"
               - name: AUDIT_BACKEND
-                value: "jdbc"
+                value: "s3"
               - name: SPRING_DATASOURCE_URL
                 valueFrom:
                   secretKeyRef: { name: xml-json-db, key: url }
@@ -42,6 +42,12 @@ spec:
                 value: "http://otel-collector:4317"
               - name: MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED
                 value: "true"
+              - name: AUDIT_S3_BUCKET
+                value: "xmljson"
+              - name: AUDIT_S3_REGION
+                value: "us-east-1"
+              - name: AUDIT_S3_ENDPOINT
+                value: "http://minio:9000"
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: 8080 }
             periodSeconds: 5

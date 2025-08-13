@@ -5,6 +5,7 @@ audit:
   backend: memory
   file-path: audit-store.ser
   enabled: true
+  s3-prefix: audits
 
 mapping:
   pretty-print: false

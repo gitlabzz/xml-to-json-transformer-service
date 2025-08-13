@@ -12,4 +12,12 @@ public interface AuditStore {
     List<AuditEntry> search(String text);
 
     int count();
+
+    default String xmlUrl(long id) {
+        return null;
+    }
+
+    default String jsonUrl(long id) {
+        return null;
+    }
 }

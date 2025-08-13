@@ -16,12 +16,18 @@ public class JpaAuditEntry {
     private long durationMs;
 
     @Lob
-    @Column(name = "xml_data", nullable = false)
+    @Column(name = "xml_data")
     private byte[] xmlData;
 
+    @Column(name = "xml_key")
+    private String xmlKey;
+
     @Lob
-    @Column(name = "json_data", nullable = false)
+    @Column(name = "json_data")
     private byte[] jsonData;
+
+    @Column(name = "json_key")
+    private String jsonKey;
 
     private boolean compressed;
 
@@ -90,6 +96,22 @@ public class JpaAuditEntry {
 
     public void setJsonData(byte[] jsonData) {
         this.jsonData = jsonData;
+    }
+
+    public String getXmlKey() {
+        return xmlKey;
+    }
+
+    public void setXmlKey(String xmlKey) {
+        this.xmlKey = xmlKey;
+    }
+
+    public String getJsonKey() {
+        return jsonKey;
+    }
+
+    public void setJsonKey(String jsonKey) {
+        this.jsonKey = jsonKey;
     }
 
     public boolean isCompressed() {

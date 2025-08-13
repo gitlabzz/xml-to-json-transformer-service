@@ -21,7 +21,7 @@ COPY --from=build /workspace/build/libs /app/target
 # OCI labels
 LABEL org.opencontainers.image.title="xml-to-json-transformer-service" \
       org.opencontainers.image.description="Streaming XML->JSON transformer (Spring Boot)" \
-      org.opencontainers.image.source="https://github.com/<org>/xml-to-json-transformer-service" \
+      org.opencontainers.image.source="https://github.com/example/xml-to-json-transformer-service" \
       org.opencontainers.image.revision="$VCS_REF" \
       org.opencontainers.image.licenses="Apache-2.0"
 

@@ -49,6 +49,14 @@ public class AuditService {
         return store.search(text);
     }
 
+    public String xmlUrl(long id) {
+        return store.xmlUrl(id);
+    }
+
+    public String jsonUrl(long id) {
+        return store.jsonUrl(id);
+    }
+
     public void clear() {
         counter.set(0);
     }

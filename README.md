@@ -56,15 +56,22 @@ Additional options control namespace handling and escaping of non ASCII characte
 
 ### Audit History
 
-The service keeps a bounded history of recent transformations. The history can be stored either in memory (default) or persisted to a file. The history size, page size for the HTML views, backend type and whether the stored payloads are compressed can be configured using the following properties:
+The service keeps a bounded history of recent transformations. The history can be stored either in memory (default) or persisted to a file or external backends. The history size, page size for the HTML views, backend type and whether the stored payloads are compressed can be configured using the following properties:
 
 ```
 audit.history-size=100
 audit.page-size=20
 audit.compress=true
-audit.backend=memory # or 'file'
+audit.backend=memory # or 'file', 'jdbc', 's3'
 audit.file-path=audit-store.ser
+audit.s3-prefix=audits
+# when using object storage
+audit.s3-bucket=xmljson
+audit.s3-region=us-east-1
+audit.s3-endpoint=http://minio:9000
 ```
+
+With `audit.backend=s3`, payload bytes are stored in the specified bucket under the given prefix while metadata remains in the database. The UI fetches XML and JSON bodies through short-lived links exposed at `/audit/{id}/xmlUrl` and `/audit/{id}/jsonUrl`.
 
 Environment specific variants of `application.yml` can be placed alongside the default file
 using the naming convention `application-{profile}.yml` (e.g. `application-dev.yml`). The active
