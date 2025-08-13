@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1.7
+
+# ---------- Build stage ----------
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /workspace
+COPY build.gradle settings.gradle gradle.properties ./
+COPY gradle ./gradle
+RUN ./gradlew --no-daemon dependencies || true
+COPY . .
+RUN ./gradlew --no-daemon clean bootJar
+RUN JAR_FILE=$(ls build/libs/*-SNAPSHOT.jar 2>/dev/null || ls build/libs/*.jar) && \
+    echo "$JAR_FILE" > /jar_path
+
+# ---------- Runtime stage ----------
+FROM gcr.io/distroless/java21-debian12:nonroot
+WORKDIR /app
+COPY --from=build /jar_path /app/jar_path
+RUN true
+COPY --from=build /workspace/build/libs /app/target
+
+# OCI labels
+LABEL org.opencontainers.image.title="xml-to-json-transformer-service" \
+      org.opencontainers.image.description="Streaming XML->JSON transformer (Spring Boot)" \
+      org.opencontainers.image.source="https://github.com/<org>/xml-to-json-transformer-service" \
+      org.opencontainers.image.revision="$VCS_REF" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+EXPOSE 8080
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC" \
+    SERVER_PORT=8080 \
+    AUDIT_BACKEND=memory \
+    AUDIT_HISTORY_SIZE=100 \
+    AUDIT_FILE_PATH=/data/audit-store.json
+VOLUME ["/data"]
+ENTRYPOINT ["java","-jar","/app/target/xml-json-spring-boot-starter-0.0.1-SNAPSHOT.jar"]
