@@ -10,4 +10,6 @@ public interface AuditStore {
      * Returns all audit entries whose XML or JSON payload contains the given text.
      */
     List<AuditEntry> search(String text);
+
+    int count();
 }

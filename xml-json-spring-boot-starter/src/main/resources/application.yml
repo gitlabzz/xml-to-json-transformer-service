@@ -16,7 +16,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: ping
+          include: db,ping
         liveness:
           include: ping
 

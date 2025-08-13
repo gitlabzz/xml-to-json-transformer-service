@@ -48,6 +48,11 @@ public class InMemoryAuditStore implements AuditStore {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    @Override
+    public int count() {
+        return history.size();
+    }
+
     private boolean containsIgnoreCase(AuditEntry e, String lower) {
         try {
             return e.getXml().toLowerCase().contains(lower)
