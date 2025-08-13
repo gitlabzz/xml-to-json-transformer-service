@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 @SpringBootTest(properties = {
         "audit.enabled=false",
@@ -23,12 +24,12 @@ public class PrometheusMetricsTest {
 
     @Test
     void prometheusHasTransformMetrics() throws Exception {
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>") )
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/actuator/prometheus"))
+        mockMvc.perform(get("/actuator/prometheus").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("transform_duration_seconds_bucket")));
     }

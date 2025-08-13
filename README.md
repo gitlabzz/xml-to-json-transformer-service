@@ -116,3 +116,11 @@ The service exposes Prometheus metrics, OpenTelemetry traces and structured JSON
 * Logs are emitted in JSON with correlation and trace information suitable for Loki or ELK.
 
 Set the OTLP endpoint with `OTEL_EXPORTER_OTLP_ENDPOINT` and enable Prometheus scraping by setting `MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true`.
+
+### Security
+
+The service acts as an OAuth2 resource server and requires a valid JWT for `/v1/transform` and audit endpoints. A simple API key mode is available by activating the `apikey` profile and providing an `API_KEY` environment variable. Incoming requests are subject to strict validation and limits:
+
+* Only `application/xml` or `text/xml` content types are accepted and payloads larger than 10&nbsp;MiB are rejected.
+* Each client is rate limited to 60 requests per minute.
+* CORS origins can be restricted via the `cors.allowed-origins` property.

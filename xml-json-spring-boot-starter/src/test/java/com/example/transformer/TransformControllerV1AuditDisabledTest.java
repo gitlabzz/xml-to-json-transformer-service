@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
@@ -46,7 +47,7 @@ public class TransformControllerV1AuditDisabledTest {
 
     @Test
     void noAuditWhenDisabled() throws Exception {
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>") )
                 .andExpect(status().isOk());

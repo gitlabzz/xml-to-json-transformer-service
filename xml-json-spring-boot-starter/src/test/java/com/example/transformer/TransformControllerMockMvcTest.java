@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(controllers = TransformController.class)
@@ -43,7 +44,7 @@ public class TransformControllerMockMvcTest {
 
     @Test
     public void validXml() throws Exception {
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>"))
                 .andExpect(status().isOk())
@@ -56,7 +57,7 @@ public class TransformControllerMockMvcTest {
         doThrow(new XMLStreamException("invalid"))
                 .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
 
-        mockMvc.perform(post("/transform")
+        mockMvc.perform(post("/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>"))
                 .andExpect(status().isBadRequest())

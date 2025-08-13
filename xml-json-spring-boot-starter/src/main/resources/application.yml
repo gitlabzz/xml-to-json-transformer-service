@@ -32,7 +32,9 @@ management:
       probability: 1.0
 
 server:
+  max-http-request-header-size: 32KB
   tomcat:
+    max-swallow-size: 0
     mbeanregistry:
       enabled: true
 
@@ -41,3 +43,9 @@ spring:
     name: xml-json
   config:
     import: "optional:configserver:http://config-server:8888"
+  mvc:
+    async:
+      request-timeout: 30s
+
+cors:
+  allowed-origins: "https://ui.myplatform.example"

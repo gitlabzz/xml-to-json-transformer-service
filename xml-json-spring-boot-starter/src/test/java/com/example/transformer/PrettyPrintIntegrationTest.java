@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 @SpringBootTest(properties = {
         "mapping.pretty-print=true",
@@ -24,7 +25,7 @@ public class PrettyPrintIntegrationTest {
 
     @Test
     void prettyPrintEnabled() throws Exception {
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<root><a>1</a></root>") )
                 .andExpect(status().isOk())

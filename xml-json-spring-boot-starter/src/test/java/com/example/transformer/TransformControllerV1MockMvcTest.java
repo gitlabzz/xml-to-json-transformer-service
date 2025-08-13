@@ -23,6 +23,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 @WebMvcTest(controllers = TransformControllerV1.class)
 @Import(CorrelationFilter.class)
@@ -51,7 +52,7 @@ public class TransformControllerV1MockMvcTest {
 
     @Test
     public void validXml() throws Exception {
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>") )
                 .andExpect(status().isOk());
@@ -59,7 +60,7 @@ public class TransformControllerV1MockMvcTest {
 
     @Test
     public void headersPresent() throws Exception {
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a/>")
                 .header(CorrelationFilter.CORRELATION, "abc"))
@@ -73,7 +74,7 @@ public class TransformControllerV1MockMvcTest {
         doThrow(new XMLStreamException("invalid"))
                 .when(xmlToJsonStreamer).transform(any(InputStream.class), any(OutputStream.class));
 
-        mockMvc.perform(post("/v1/transform")
+        mockMvc.perform(post("/v1/transform").with(jwt())
                 .contentType(MediaType.APPLICATION_XML)
                 .content("<a>") )
                 .andExpect(status().isBadRequest());
